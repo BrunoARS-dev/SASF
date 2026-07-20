@@ -1,0 +1,14 @@
+{
+  "name": "sasf",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=@sasf/web",
+    "dev:api": "npm run start:dev --workspace=@sasf/api",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "typecheck": "npm run typecheck --workspaces"
+  },
+  "engines": { "node": ">=20.9.0", "npm": ">=10" }
+}

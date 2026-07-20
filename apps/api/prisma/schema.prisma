@@ -1,0 +1,198 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  SECRETARIA
+  PADRE
+}
+
+enum AppointmentStatus {
+  AGENDADO
+  CANCELADO
+  PENDENTE_CONFIRMACAO
+  REALIZADO
+  AUSENTE
+}
+
+enum SettingValueType {
+  STRING
+  INTEGER
+  BOOLEAN
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String   @db.VarChar(120)
+  username     String   @unique @db.VarChar(80)
+  email        String   @unique @db.VarChar(160)
+  passwordHash String   @db.VarChar(255)
+  role         UserRole
+  active       Boolean  @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  priestProfile Priest?
+  blockedSlots  BlockedSlot[] @relation("BlockedSlotCreator")
+  settings      SystemSetting[] @relation("SystemSettingUpdater")
+  auditLogs     AuditLog[] @relation("AuditActor")
+  qrCodes       QrCode[] @relation("QrCodeGenerator")
+
+  @@index([role, active])
+  @@index([username])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model Priest {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+  name                   String   @db.VarChar(120)
+  active                 Boolean  @default(true)
+  appointmentDurationMin Int?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  deletedAt              DateTime?
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  availabilities Availability[]
+  blockedSlots   BlockedSlot[]
+  appointments   Appointment[]
+
+  @@index([active])
+  @@index([deletedAt])
+  @@map("priests")
+}
+
+model Availability {
+  id        String   @id @default(cuid())
+  priestId  String
+  dayOfWeek Int
+  startTime DateTime @db.Time(0)
+  endTime   DateTime @db.Time(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  priest Priest @relation(fields: [priestId], references: [id], onDelete: Restrict)
+
+  @@index([priestId, dayOfWeek, active])
+  @@index([deletedAt])
+  @@map("availabilities")
+}
+
+model BlockedSlot {
+  id                String   @id @default(cuid())
+  priestId          String
+  startAt           DateTime
+  endAt             DateTime
+  operationalReason String?  @db.VarChar(180)
+  active            Boolean  @default(true)
+  createdById       String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  deletedAt         DateTime?
+
+  priest    Priest @relation(fields: [priestId], references: [id], onDelete: Restrict)
+  createdBy User   @relation("BlockedSlotCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([priestId, startAt, endAt, active])
+  @@index([deletedAt])
+  @@map("blocked_slots")
+}
+
+model Appointment {
+  id               String            @id @default(cuid())
+  priestId         String
+  sequenceNumber   Int               @unique @default(autoincrement())
+  startAt          DateTime
+  endAt            DateTime
+  status           AppointmentStatus @default(AGENDADO)
+  faithfulName     String            @db.VarChar(120)
+  faithfulPhone    String            @db.VarChar(32)
+  faithfulLastName String            @db.VarChar(80)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  cancelledAt      DateTime?
+  completedAt      DateTime?
+  deletedAt        DateTime?
+
+  priest Priest @relation(fields: [priestId], references: [id], onDelete: Restrict)
+  code   AppointmentCode?
+
+  @@index([status, startAt])
+  @@index([faithfulPhone, status, startAt])
+  @@index([faithfulPhone, faithfulLastName, startAt, status])
+  @@index([priestId, startAt, endAt, status])
+  @@index([deletedAt])
+  @@map("appointments")
+}
+
+model AppointmentCode {
+  id            String   @id @default(cuid())
+  appointmentId String   @unique
+  codeHash      String   @unique @db.VarChar(255)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  revokedAt     DateTime?
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([active])
+  @@index([appointmentId, active])
+  @@map("appointment_codes")
+}
+
+model SystemSetting {
+  key         String           @id @db.VarChar(80)
+  value       String           @db.VarChar(255)
+  valueType   SettingValueType
+  description String?          @db.VarChar(180)
+  updatedAt   DateTime         @updatedAt
+  updatedById String?
+
+  updatedBy User? @relation("SystemSettingUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([updatedAt])
+  @@map("system_settings")
+}
+
+model QrCode {
+  id            String   @id @default(cuid())
+  publicPath    String   @db.VarChar(255)
+  version       Int      @unique
+  active        Boolean  @default(true)
+  generatedAt   DateTime @default(now())
+  generatedById String?
+  revokedAt     DateTime?
+
+  generatedBy User? @relation("QrCodeGenerator", fields: [generatedById], references: [id], onDelete: SetNull)
+
+  @@index([active, generatedAt])
+  @@map("qr_codes")
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorUserId  String?
+  action       String   @db.VarChar(80)
+  entityType   String   @db.VarChar(80)
+  entityId     String?  @db.VarChar(120)
+  metadataSafe Json?
+  occurredAt   DateTime @default(now())
+
+  actor User? @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId, occurredAt])
+  @@index([actorUserId, occurredAt])
+  @@map("audit_logs")
+}
