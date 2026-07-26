@@ -1020,6 +1020,11 @@ a {
   width: auto;
 }
 
+.manager-add-button {
+  align-self: end;
+  height: var(--control-height);
+}
+
 .field select,
 .manager-inline-form input,
 .manager-inline-form select {
@@ -1063,7 +1068,7 @@ a {
   grid-template-columns: minmax(180px, 1.2fr) repeat(3, minmax(100px, 0.75fr)) auto auto;
 }
 
-.availability-status-actions {
+.manager-status-actions {
   align-items: center;
   display: flex;
   gap: 8px;
