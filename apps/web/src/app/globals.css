@@ -180,6 +180,40 @@ a {
   margin: 6px 0 0;
 }
 
+.date-selection-heading {
+  align-items: center;
+}
+
+.date-view-toggle {
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  color: var(--green-dark);
+  display: inline-flex;
+  flex: 0 0 40px;
+  height: 40px;
+  justify-content: center;
+  padding: 0;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+  width: 40px;
+}
+
+.date-view-toggle:hover {
+  background: var(--surface-soft);
+  border-color: var(--green);
+}
+
+.date-view-toggle:focus-visible {
+  box-shadow: 0 0 0 3px rgba(31, 111, 74, 0.14);
+  outline: none;
+}
+
+.date-view-toggle svg {
+  height: 21px;
+  width: 21px;
+}
+
 .day-rail {
   display: flex;
   gap: 10px;
@@ -1340,6 +1374,13 @@ a {
   .section-heading p,
   .helper-text {
     font-size: 12px;
+  }
+
+  .date-view-toggle {
+    border-radius: 7px;
+    flex-basis: 36px;
+    height: 36px;
+    width: 36px;
   }
 
   .day-rail {

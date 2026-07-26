@@ -14,11 +14,13 @@ import {
 } from '@/lib/public-api'
 
 const WINDOW_DAYS = 30
+type DateView = 'carousel' | 'calendar'
 
 export function AppointmentScheduler() {
   const router = useRouter()
   const today = useMemo(() => startOfToday(), [])
   const days = useMemo(() => Array.from({ length: WINDOW_DAYS }, (_, index) => addDays(today, index)), [today])
+  const [dateView, setDateView] = useState<DateView>('carousel')
   const [availableDays, setAvailableDays] = useState<Map<string, boolean>>(new Map())
   const [selectedDate, setSelectedDate] = useState(toDateOnly(today))
   const [availableTimes, setAvailableTimes] = useState<AvailableTime[]>([])
@@ -114,40 +116,51 @@ export function AppointmentScheduler() {
   return (
     <div className="workspace">
       <section className="flow-panel" aria-labelledby="booking-title">
-        <div className="section-heading">
+        <div className="section-heading date-selection-heading">
           <div>
             <h2 id="booking-title">Escolha o dia e horario</h2>
           </div>
+          <button
+            className="date-view-toggle"
+            type="button"
+            aria-label={dateView === 'carousel' ? 'Visualizar como calendario' : 'Visualizar como carrossel'}
+            title={dateView === 'carousel' ? 'Visualizar como calendario' : 'Visualizar como carrossel'}
+            onClick={() => setDateView((current) => (current === 'carousel' ? 'calendar' : 'carousel'))}
+          >
+            {dateView === 'carousel' ? <CalendarViewIcon /> : <CarouselViewIcon />}
+          </button>
         </div>
 
-        <div className="day-rail" aria-label="Proximos dias">
-          {days.map((day) => {
-            const date = toDateOnly(day)
-            const available = availableDays.get(date) ?? false
-            return (
-              <button
-                className="day-button"
-                key={date}
-                type="button"
-                aria-pressed={selectedDate === date}
-                disabled={loadingDays || !available}
-                onClick={() => setSelectedDate(date)}
-              >
-                <span>{weekdayShort(day)}</span>
-                <strong>{day.getDate().toString().padStart(2, '0')}</strong>
-                <span>{available ? monthShort(day) : 'sem vaga'}</span>
-              </button>
-            )
-          })}
-        </div>
-
-        <MiniCalendar
-          days={days}
-          selectedDate={selectedDate}
-          availableDays={availableDays}
-          loading={loadingDays}
-          onSelect={setSelectedDate}
-        />
+        {dateView === 'carousel' ? (
+          <div className="day-rail" aria-label="Proximos dias">
+            {days.map((day) => {
+              const date = toDateOnly(day)
+              const available = availableDays.get(date) ?? false
+              return (
+                <button
+                  className="day-button"
+                  key={date}
+                  type="button"
+                  aria-pressed={selectedDate === date}
+                  disabled={loadingDays || !available}
+                  onClick={() => setSelectedDate(date)}
+                >
+                  <span>{weekdayShort(day)}</span>
+                  <strong>{day.getDate().toString().padStart(2, '0')}</strong>
+                  <span>{available ? monthShort(day) : 'sem vaga'}</span>
+                </button>
+              )
+            })}
+          </div>
+        ) : (
+          <MiniCalendar
+            days={days}
+            selectedDate={selectedDate}
+            availableDays={availableDays}
+            loading={loadingDays}
+            onSelect={setSelectedDate}
+          />
+        )}
 
         <div className="section-heading">
           <div>
@@ -349,4 +362,23 @@ function weekdayShort(date: Date) {
 
 function monthShort(date: Date) {
   return new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(date).replace('.', '')
+}
+
+function CalendarViewIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3.5" y="5.5" width="17" height="15" rx="2.5" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M7.5 3.5v4M16.5 3.5v4M3.5 10h17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M7.5 14h2M14.5 14h2M7.5 17h2M14.5 17h2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function CarouselViewIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="6.5" y="5" width="11" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M3.5 8v8M20.5 8v8M9.5 9h5M9.5 12h5M9.5 15h3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
 }
