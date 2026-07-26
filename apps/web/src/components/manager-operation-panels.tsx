@@ -1,7 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { QRCodeSVG } from 'qrcode.react'
+import { useEffect, useState } from 'react'
 import type { HTMLAttributes, ReactNode } from 'react'
 import type {
   ManagerAvailability,
@@ -383,40 +384,51 @@ function SettingRow({ setting }: { setting: ManagerSetting }) {
 }
 
 export function QrCodePanel({ qrCode }: { qrCode: ManagerQrCode | null }) {
-  const router = useRouter()
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [publicUrl, setPublicUrl] = useState('')
 
-  async function generate() {
-    await submitJson('/api/internal/qr-codes', 'POST', {}, setLoading, setError, router.refresh)
-  }
+  useEffect(() => {
+    setPublicUrl(qrCode ? new URL(qrCode.publicPath, window.location.origin).toString() : '')
+  }, [qrCode])
 
   return (
-    <ManagerCrud title="QR Code publico" description="Mantenha o link publico de agendamento versionado.">
+    <ManagerCrud title="QR Code">
       <div className="qr-panel">
-        <div className="qr-box" aria-hidden="true">
-          <span>QR</span>
+        <div className="qr-print-area">
+          <div className="qr-print-heading">
+            <p>Agendamento de confissão</p>
+            <small>Aponte a câmera do celular para o QR Code e escolha o melhor horário.</small>
+          </div>
+          <div className="qr-box">
+            {publicUrl ? (
+              <QRCodeSVG
+                aria-label={`QR Code para ${publicUrl}`}
+                level="M"
+                marginSize={2}
+                size={180}
+                title="QR Code para o agendamento publico"
+                value={publicUrl}
+              />
+            ) : (
+              <span aria-hidden="true">QR</span>
+            )}
+          </div>
         </div>
         <div className="qr-details">
-          <strong>{qrCode ? `Versao ${qrCode.version}` : 'Nenhum QR ativo'}</strong>
-          <span>{qrCode?.url ?? 'Gere uma versao para publicar o acesso publico.'}</span>
-          {qrCode ? <a className="secondary-button compact-button" href={qrCode.url} target="_blank">Abrir link</a> : null}
-          <button className="primary-button" type="button" disabled={loading} onClick={generate}>
-            {loading ? 'Gerando...' : 'Gerar nova versao'}
+          <button className="primary-button" type="button" disabled={!publicUrl} onClick={() => window.print()}>
+            Imprimir QR Code
           </button>
         </div>
       </div>
-      <ErrorText message={error} />
     </ManagerCrud>
   )
 }
 
-function ManagerCrud({ title, description, children }: { title: string; description: string; children: ReactNode }) {
+function ManagerCrud({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
     <div className="manager-content">
       <section className="manager-title">
         <h1>{title}</h1>
-        <p>{description}</p>
+        {description ? <p>{description}</p> : null}
       </section>
       <div className="manager-empty operation-panel">{children}</div>
     </div>
