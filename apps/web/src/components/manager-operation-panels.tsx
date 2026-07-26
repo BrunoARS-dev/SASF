@@ -14,6 +14,41 @@ import type {
 
 const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab']
 
+const settingCopy: Record<string, { label: string; description: string }> = {
+  minimum_booking_lead_hours: {
+    label: 'Antecedência para agendar',
+    description: 'Quantidade mínima de horas entre o agendamento e o horário escolhido.',
+  },
+  minimum_cancellation_lead_hours: {
+    label: 'Prazo para cancelamento',
+    description: 'Quantidade mínima de horas de antecedência para o fiel cancelar.',
+  },
+  booking_window_days: {
+    label: 'Período disponível para agendamento',
+    description: 'Quantidade de dias futuros que ficarão disponíveis para escolha.',
+  },
+  manual_override_enabled: {
+    label: 'Agendamento manual',
+    description: 'Permite que a equipe interna faça agendamentos pela agenda.',
+  },
+  code_recovery_enabled: {
+    label: 'Recuperação de código',
+    description: 'Permite que o fiel recupere o código privado do agendamento.',
+  },
+  receipt_enabled: {
+    label: 'Comprovante de agendamento',
+    description: 'Habilita a disponibilidade do comprovante após o agendamento.',
+  },
+  default_appointment_duration_minutes: {
+    label: 'Duração padrão do atendimento',
+    description: 'Duração usada quando o padre não possui um tempo específico configurado.',
+  },
+  timezone: {
+    label: 'Fuso horário',
+    description: 'Fuso horário cadastrado para a operação do sistema.',
+  },
+}
+
 export function ManualAppointmentPanel({ priests, onCancel }: { priests: ManagerPriest[]; onCancel: () => void }) {
   const router = useRouter()
   const [error, setError] = useState('')
@@ -335,7 +370,7 @@ function BlockedSlotRow({ blockedSlot }: { blockedSlot: ManagerBlockedSlot }) {
 
 export function SettingsPanel({ settings }: { settings: ManagerSetting[] }) {
   return (
-    <ManagerCrud title="Configuracoes" description="Ajuste parametros operacionais validados pelo backend.">
+    <ManagerCrud title="Configuracoes" description="Defina as regras usadas nos agendamentos e atendimentos.">
       <div className="manager-list">
         {settings.map((setting) => (
           <SettingRow key={setting.key} setting={setting} />
@@ -349,6 +384,10 @@ function SettingRow({ setting }: { setting: ManagerSetting }) {
   const router = useRouter()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const copy = settingCopy[setting.key] ?? {
+    label: setting.key,
+    description: setting.description ?? setting.valueType,
+  }
 
   async function update(formData: FormData) {
     await submitJson(
@@ -365,16 +404,21 @@ function SettingRow({ setting }: { setting: ManagerSetting }) {
     <article className="manager-list-item">
       <form className="manager-inline-form" action={update}>
         <div>
-          <strong>{setting.key}</strong>
-          <span>{setting.description ?? setting.valueType}</span>
+          <strong>{copy.label}</strong>
+          <span>{copy.description}</span>
         </div>
         {setting.valueType === 'BOOLEAN' ? (
-          <select name="value" defaultValue={setting.value} aria-label={setting.key}>
+          <select name="value" defaultValue={setting.value} aria-label={copy.label}>
             <option value="true">Sim</option>
             <option value="false">Nao</option>
           </select>
         ) : (
-          <input name="value" defaultValue={setting.value} inputMode={setting.valueType === 'INTEGER' ? 'numeric' : 'text'} />
+          <input
+            name="value"
+            defaultValue={setting.value}
+            inputMode={setting.valueType === 'INTEGER' ? 'numeric' : 'text'}
+            aria-label={copy.label}
+          />
         )}
         <button className="secondary-button compact-button" disabled={loading} type="submit">Salvar</button>
       </form>
