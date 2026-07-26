@@ -10,6 +10,7 @@ export function LoginForm() {
   const next = searchParams.get('next') ?? '/gestor'
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -55,19 +56,60 @@ export function LoginForm() {
       </div>
       <div className="field">
         <label htmlFor="password">Senha</label>
-        <input
-          id="password"
-          autoComplete="current-password"
-          required
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-        />
+        <div className="password-input-wrap">
+          <input
+            id="password"
+            autoComplete="current-password"
+            required
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+          <button
+            className="password-visibility-button"
+            type="button"
+            aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+            aria-pressed={showPassword}
+            title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+            onClick={() => setShowPassword((current) => !current)}
+          >
+            {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+          </button>
+        </div>
       </div>
       <button className="primary-button" type="submit" disabled={submitting}>
         {submitting ? 'Entrando...' : 'Entrar'}
       </button>
       {error ? <div className="status-box error">{error}</div> : null}
     </form>
+  )
+}
+
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M2.8 12s3.4-5.5 9.2-5.5 9.2 5.5 9.2 5.5-3.4 5.5-9.2 5.5S2.8 12 2.8 12Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="12" r="2.7" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  )
+}
+
+function EyeOffIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="m4 4 16 16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path
+        d="M9.1 6.9A9.9 9.9 0 0 1 12 6.5c5.8 0 9.2 5.5 9.2 5.5a16.6 16.6 0 0 1-2.4 3M14.8 17.1a9.8 9.8 0 0 1-2.8.4C6.2 17.5 2.8 12 2.8 12a16.2 16.2 0 0 1 2.5-3.1M10.1 10.1a2.7 2.7 0 0 0 3.8 3.8"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 }
