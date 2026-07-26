@@ -279,7 +279,7 @@ function EditableAvailability({ availability }: { availability: ManagerAvailabil
       <form
         className="manager-inline-form availability-inline-form"
         action={update}
-        onChange={(event) => updatePendingState(event.currentTarget)}
+        onInput={(event) => updatePendingState(event.currentTarget)}
       >
         <div>
           <strong>{availability.priest.name}</strong>
@@ -420,13 +420,14 @@ function SettingRow({ setting }: { setting: ManagerSetting }) {
   const router = useRouter()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
   const copy = settingCopy[setting.key] ?? {
     label: setting.key,
     description: setting.description ?? setting.valueType,
   }
 
   async function update(formData: FormData) {
-    await submitJson(
+    const saved = await submitJson(
       '/api/internal/settings',
       'PATCH',
       { key: setting.key, value: String(formData.get('value') ?? '') },
@@ -434,6 +435,14 @@ function SettingRow({ setting }: { setting: ManagerSetting }) {
       setError,
       router.refresh,
     )
+
+    if (saved) {
+      setHasChanges(false)
+    }
+  }
+
+  function updatePendingValue(value: string) {
+    setHasChanges(value !== setting.value)
   }
 
   return (
@@ -444,7 +453,12 @@ function SettingRow({ setting }: { setting: ManagerSetting }) {
           <span>{copy.description}</span>
         </div>
         {setting.valueType === 'BOOLEAN' ? (
-          <select name="value" defaultValue={setting.value} aria-label={copy.label}>
+          <select
+            name="value"
+            defaultValue={setting.value}
+            aria-label={copy.label}
+            onChange={(event) => updatePendingValue(event.currentTarget.value)}
+          >
             <option value="true">Sim</option>
             <option value="false">Nao</option>
           </select>
@@ -454,9 +468,16 @@ function SettingRow({ setting }: { setting: ManagerSetting }) {
             defaultValue={setting.value}
             inputMode={setting.valueType === 'INTEGER' ? 'numeric' : 'text'}
             aria-label={copy.label}
+            onInput={(event) => updatePendingValue(event.currentTarget.value)}
           />
         )}
-        <button className="secondary-button compact-button" disabled={loading} type="submit">Salvar</button>
+        <button
+          className={`${hasChanges ? 'primary-button' : 'secondary-button'} compact-button`}
+          disabled={loading}
+          type="submit"
+        >
+          {loading ? 'Salvando...' : 'Salvar'}
+        </button>
       </form>
       <ErrorText message={error} />
     </article>
