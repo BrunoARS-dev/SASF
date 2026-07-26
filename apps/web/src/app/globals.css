@@ -1059,6 +1059,51 @@ a {
   grid-template-columns: minmax(220px, 1fr) auto auto;
 }
 
+.availability-inline-form {
+  grid-template-columns: minmax(180px, 1.2fr) repeat(3, minmax(100px, 0.75fr)) auto auto;
+}
+
+.availability-status-actions {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.icon-danger-button {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #edc7c0;
+  border-radius: var(--radius);
+  color: var(--danger);
+  display: inline-flex;
+  flex: 0 0 var(--control-height);
+  height: var(--control-height);
+  justify-content: center;
+  padding: 0;
+  width: var(--control-height);
+}
+
+.icon-danger-button:hover,
+.icon-danger-button:focus-visible {
+  background: #fff2ef;
+  border-color: var(--danger);
+  outline: none;
+}
+
+.icon-danger-button:focus-visible {
+  box-shadow: 0 0 0 3px rgba(163, 59, 49, 0.14);
+}
+
+.icon-danger-button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.icon-danger-button svg {
+  height: 18px;
+  width: 18px;
+}
+
 .manager-list-item strong,
 .manager-list-item span,
 .manager-list-item small {

@@ -261,7 +261,7 @@ function EditableAvailability({ availability }: { availability: ManagerAvailabil
 
   return (
     <article className="manager-list-item">
-      <form className="manager-inline-form" action={update}>
+      <form className="manager-inline-form availability-inline-form" action={update}>
         <div>
           <strong>{availability.priest.name}</strong>
           <span>{weekdays[availability.dayOfWeek]} · {availability.startTime} - {availability.endTime}</span>
@@ -271,11 +271,22 @@ function EditableAvailability({ availability }: { availability: ManagerAvailabil
         </select>
         <input name="startTime" type="time" defaultValue={availability.startTime} aria-label="Inicio" />
         <input name="endTime" type="time" defaultValue={availability.endTime} aria-label="Fim" />
-        <label className="check-row">
-          <input name="active" type="checkbox" defaultChecked={availability.active} /> Ativa
-        </label>
+        <div className="availability-status-actions">
+          <label className="check-row">
+            <input name="active" type="checkbox" defaultChecked={availability.active} /> Ativa
+          </label>
+          <button
+            aria-label="Remover disponibilidade"
+            className="icon-danger-button"
+            disabled={loading}
+            title="Remover disponibilidade"
+            type="button"
+            onClick={remove}
+          >
+            <TrashIcon />
+          </button>
+        </div>
         <button className="secondary-button compact-button" disabled={loading} type="submit">Salvar</button>
-        <button className="quiet-danger-button compact-button" disabled={loading} type="button" onClick={remove}>Remover</button>
       </form>
       <ErrorText message={error} />
     </article>
@@ -526,6 +537,14 @@ function WeekdaySelect() {
 
 function ErrorText({ message }: { message: string }) {
   return message ? <div className="status-box error">{message}</div> : null
+}
+
+function TrashIcon() {
+  return (
+    <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+      <path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+    </svg>
+  )
 }
 
 function formDataToObject(formData: FormData) {
