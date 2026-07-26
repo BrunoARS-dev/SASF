@@ -28,19 +28,26 @@ export async function getCurrentUser(): Promise<InternalUser | null> {
     return null
   }
 
-  const response = await fetch(`${API_URL}${API_PREFIX}/auth/session`, {
-    headers: {
-      Cookie: cookieHeader,
-    },
-    cache: 'no-store',
-  })
+  try {
+    const response = await fetch(`${API_URL}${API_PREFIX}/auth/session`, {
+      headers: {
+        Cookie: cookieHeader,
+      },
+      cache: 'no-store',
+    })
 
-  if (!response.ok) {
+    if (!response.ok) {
+      return null
+    }
+
+    const data = (await response.json()) as AuthSession
+    return data.user
+  } catch (error) {
+    console.warn('[auth] Nao foi possivel consultar a sessao na API.', {
+      error: error instanceof Error ? error.message : String(error),
+    })
     return null
   }
-
-  const data = (await response.json()) as AuthSession
-  return data.user
 }
 
 export function canAccess(role: InternalRole, route: InternalRouteKey) {
