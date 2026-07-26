@@ -238,9 +238,10 @@ function EditableAvailability({ availability }: { availability: ManagerAvailabil
   const router = useRouter()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
 
   async function update(formData: FormData) {
-    await submitJson(
+    const saved = await submitJson(
       `/api/internal/availabilities/${availability.id}`,
       'PATCH',
       {
@@ -253,15 +254,33 @@ function EditableAvailability({ availability }: { availability: ManagerAvailabil
       setError,
       router.refresh,
     )
+
+    if (saved) {
+      setHasChanges(false)
+    }
   }
 
   async function remove() {
     await submitJson(`/api/internal/availabilities/${availability.id}`, 'DELETE', null, setLoading, setError, router.refresh)
   }
 
+  function updatePendingState(form: HTMLFormElement) {
+    const formData = new FormData(form)
+    setHasChanges(
+      Number(formData.get('dayOfWeek')) !== availability.dayOfWeek
+      || String(formData.get('startTime') ?? '') !== availability.startTime
+      || String(formData.get('endTime') ?? '') !== availability.endTime
+      || (formData.get('active') === 'on') !== availability.active,
+    )
+  }
+
   return (
     <article className="manager-list-item">
-      <form className="manager-inline-form availability-inline-form" action={update}>
+      <form
+        className="manager-inline-form availability-inline-form"
+        action={update}
+        onChange={(event) => updatePendingState(event.currentTarget)}
+      >
         <div>
           <strong>{availability.priest.name}</strong>
           <span>{weekdays[availability.dayOfWeek]} · {availability.startTime} - {availability.endTime}</span>
@@ -286,7 +305,13 @@ function EditableAvailability({ availability }: { availability: ManagerAvailabil
             <TrashIcon />
           </button>
         </div>
-        <button className="secondary-button compact-button" disabled={loading} type="submit">Salvar</button>
+        <button
+          className={`${hasChanges ? 'primary-button' : 'secondary-button'} compact-button`}
+          disabled={loading}
+          type="submit"
+        >
+          {loading ? 'Salvando...' : 'Salvar'}
+        </button>
       </form>
       <ErrorText message={error} />
     </article>
@@ -572,12 +597,14 @@ async function submitJson(
     if (!response.ok) {
       const data = await response.json().catch(() => null)
       setError(typeof data?.message === 'string' ? data.message : 'Nao foi possivel salvar agora.')
-      return
+      return false
     }
 
     refresh()
+    return true
   } catch {
     setError('Nao foi possivel conectar agora.')
+    return false
   } finally {
     setLoading(false)
   }
