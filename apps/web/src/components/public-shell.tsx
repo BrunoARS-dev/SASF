@@ -1,10 +1,10 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
-export function PublicShell({ children }: { children: ReactNode }) {
+export function PublicShell({ children, compact = false }: { children: ReactNode; compact?: boolean }) {
   return (
     <main className="public-shell">
-      <header className="public-header">
+      <header className={`public-header${compact ? ' public-header-compact' : ''}`}>
         <Link className="brand" href="/agendar" aria-label="Ir para agendamento">
           <span className="brand-mark" aria-hidden="true">
             <CrossIcon />

@@ -114,7 +114,7 @@ export function AppointmentScheduler() {
   }
 
   return (
-    <div className="workspace">
+    <div className="workspace booking-workspace">
       <section className="flow-panel" aria-labelledby="booking-title">
         <div className="section-heading date-selection-heading">
           <div>
@@ -219,38 +219,41 @@ export function AppointmentScheduler() {
               onChange={(event) => setForm((current) => ({ ...current, faithfulPhone: event.target.value }))}
             />
           </div>
+          <section className="booking-summary" aria-labelledby="booking-summary-title">
+            <div className="section-heading">
+              <div>
+                <h2 id="booking-summary-title">Resumo</h2>
+              </div>
+            </div>
+            <div className="appointment-summary">
+              <div className="summary-row">
+                <span>Nome</span>
+                <strong>{form.faithfulName.trim() || 'Nao informado'}</strong>
+              </div>
+              <div className="summary-row">
+                <span>Ultimo sobrenome</span>
+                <strong>{form.faithfulLastName.trim() || 'Nao informado'}</strong>
+              </div>
+              <div className="summary-row">
+                <span>Telefone</span>
+                <strong>{form.faithfulPhone.trim() || 'Nao informado'}</strong>
+              </div>
+              <div className="summary-row">
+                <span>Dia</span>
+                <strong>{selectedDateObject.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</strong>
+              </div>
+              <div className="summary-row">
+                <span>Horario</span>
+                <strong>{selectedTime ? formatTime(selectedTime) : 'Escolha acima'}</strong>
+              </div>
+            </div>
+          </section>
           <button className="primary-button" type="submit" disabled={submitting || loadingTimes}>
             {submitting ? 'Agendando...' : 'Agendar'}
           </button>
           {error ? <div className="status-box error">{error}</div> : null}
         </form>
       </section>
-
-      <aside className="side-panel">
-        <div className="section-heading">
-          <div>
-            <h2>Antes de confirmar</h2>
-          </div>
-        </div>
-        <div className="appointment-summary">
-          <div className="summary-row">
-            <span>Dia</span>
-            <strong>{selectedDateObject.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</strong>
-          </div>
-          <div className="summary-row">
-            <span>Horario</span>
-            <strong>{selectedTime ? formatTime(selectedTime) : 'Escolha acima'}</strong>
-          </div>
-          <div className="summary-row">
-            <span>Codigo</span>
-            <strong>gerado apos confirmar</strong>
-          </div>
-        </div>
-        <div className="link-list">
-          <a href="/consultar">Consultar com codigo <span aria-hidden="true">&gt;</span></a>
-          <a href="/recuperar-codigo">Recuperar codigo <span aria-hidden="true">&gt;</span></a>
-        </div>
-      </aside>
     </div>
   )
 }
