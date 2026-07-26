@@ -101,7 +101,7 @@ export function PriestsPanel({ priests }: { priests: ManagerPriest[] }) {
         <Field name="password" label="Senha inicial" type="password" required />
         <Field name="appointmentDurationMin" label="Duracao por atendimento (min)" type="number" />
         <button className="primary-button" type="submit" disabled={loading}>
-          {loading ? 'Salvando...' : 'Adicionar padre'}
+          {loading ? 'Salvando...' : 'Adicionar'}
         </button>
       </form>
       <ErrorText message={error} />
@@ -186,7 +186,7 @@ export function AvailabilitiesPanel({
         <Field name="startTime" label="Inicio" type="time" required />
         <Field name="endTime" label="Fim" type="time" required />
         <button className="primary-button" type="submit" disabled={loading}>
-          {loading ? 'Salvando...' : 'Adicionar disponibilidade'}
+          {loading ? 'Salvando...' : 'Adicionar'}
         </button>
       </form>
       <ErrorText message={error} />
@@ -282,7 +282,7 @@ export function BlockedSlotsPanel({
         <Field name="endAt" label="Fim" type="datetime-local" required />
         <Field name="operationalReason" label="Motivo operacional" />
         <button className="primary-button" type="submit" disabled={loading}>
-          {loading ? 'Salvando...' : 'Adicionar bloqueio'}
+          {loading ? 'Salvando...' : 'Adicionar'}
         </button>
       </form>
       <ErrorText message={error} />

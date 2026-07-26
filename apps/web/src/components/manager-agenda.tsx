@@ -29,11 +29,7 @@ export function ManagerAgenda({
       <section className="manager-title">
         <p className="manager-eyebrow">Agenda</p>
         <h1>{formattedDate}</h1>
-        <p>
-          {user.role === 'PADRE'
-            ? 'Mostrando apenas os atendimentos vinculados ao seu perfil.'
-            : 'Mostrando os atendimentos de todos os padres.'}
-        </p>
+        {user.role === 'PADRE' ? <p>Mostrando apenas os atendimentos vinculados ao seu perfil.</p> : null}
       </section>
 
       <AgendaDateControls
@@ -59,7 +55,6 @@ export function ManagerAgenda({
       {agenda.items.length === 0 ? (
         <div className="manager-empty">
           <strong>Nenhum atendimento nesta data</strong>
-          <p>Quando houver agendamentos para esta data, eles aparecerao aqui.</p>
         </div>
       ) : (
         <div className="agenda-list">
@@ -118,7 +113,7 @@ function AgendaDateControls({
           }}
         />
         {canCreateManual && !isCreatingManual ? (
-          <button className="secondary-button compact-button" type="button" onClick={onCreateManual}>
+          <button className="primary-button compact-button" type="button" onClick={onCreateManual}>
             Agendar
           </button>
         ) : null}
