@@ -141,6 +141,10 @@ a {
   margin-top: 30px;
 }
 
+.booking-workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .flow-panel,
 .side-panel {
   background: var(--surface);
@@ -486,6 +490,19 @@ a {
   padding-top: 16px;
 }
 
+.booking-summary {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  padding: 18px;
+}
+
+.booking-summary .section-heading {
+  margin-bottom: 0;
+}
+
 .summary-row {
   display: flex;
   gap: 16px;
@@ -523,6 +540,10 @@ a {
   gap: 22px;
   grid-template-columns: minmax(0, 0.9fr) minmax(320px, 0.7fr);
   margin-top: 30px;
+}
+
+.single-panel-page {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .receipt {
@@ -1258,6 +1279,7 @@ a {
   }
 
   .form-grid .field:first-child,
+  .form-grid .booking-summary,
   .form-grid .primary-button,
   .form-grid .status-box {
     grid-column: 1 / -1;
@@ -1385,10 +1407,10 @@ a {
 
   .day-rail {
     gap: 8px;
-    margin: 10px -12px 12px;
-    max-width: 100dvw;
-    padding: 2px 12px 8px;
-    width: 100dvw;
+    margin: 10px 0 12px;
+    max-width: 100%;
+    padding: 2px 0 8px;
+    width: 100%;
   }
 
   .day-button {
@@ -1498,6 +1520,10 @@ a {
     gap: 8px;
     margin-top: 10px;
     padding-top: 10px;
+  }
+
+  .booking-summary {
+    padding: 12px;
   }
 
   .summary-row {

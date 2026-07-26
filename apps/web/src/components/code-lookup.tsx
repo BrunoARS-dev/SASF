@@ -99,8 +99,7 @@ export function CodeLookup() {
       </section>
 
       <aside className="side-panel">
-        <h2>Seu codigo protege seus dados</h2>
-        <p className="helper-text">Nao e necessario criar conta. Sem o codigo, nao mostramos dados do agendamento.</p>
+        <h2>Outras opcoes</h2>
         <div className="link-list">
           <a href="/recuperar-codigo">Esqueci meu codigo <span aria-hidden="true">&gt;</span></a>
           <a href="/agendar">Fazer novo agendamento <span aria-hidden="true">&gt;</span></a>

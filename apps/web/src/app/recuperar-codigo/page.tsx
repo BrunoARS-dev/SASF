@@ -7,7 +7,6 @@ export default function RecoverCodePage() {
       <div className="page-wrap">
         <section className="page-title">
           <h1>Recupere seu codigo com seguranca.</h1>
-          <p>Quando houver exatamente um agendamento compativel, um novo codigo sera emitido.</p>
         </section>
         <CodeRecovery />
       </div>

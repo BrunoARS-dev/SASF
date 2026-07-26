@@ -39,7 +39,7 @@ export function CodeRecovery() {
   }
 
   return (
-    <div className="simple-page">
+    <div className="simple-page single-panel-page">
       <section className="flow-panel">
         <div className="section-heading">
           <div>
@@ -104,11 +104,6 @@ export function CodeRecovery() {
           </Link>
         </div>
       </section>
-
-      <aside className="side-panel">
-        <h2>Resposta neutra</h2>
-        <p className="helper-text">Por seguranca, a tela nao informa se telefone, nome ou data existem no sistema.</p>
-      </aside>
     </div>
   )
 }
