@@ -11,6 +11,7 @@ import type {
   ManagerQrCode,
   ManagerSetting,
 } from "@/lib/manager-api";
+import { ConfirmationAlert, SuccessAlert } from "./ui-feedback";
 
 const weekdays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
@@ -212,6 +213,8 @@ function EditablePriest({ priest }: { priest: ManagerPriest }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [savedSuccessfully, setSavedSuccessfully] = useState(false);
 
   async function update(formData: FormData) {
     const saved = await submitJson(
@@ -231,19 +234,12 @@ function EditablePriest({ priest }: { priest: ManagerPriest }) {
 
     if (saved) {
       setHasChanges(false);
+      setSavedSuccessfully(true);
     }
   }
 
   async function remove() {
-    const confirmed = window.confirm(
-      `Remover ${priest.name}? O histórico será preservado e o cadastro poderá ser restaurado posteriormente.`
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    await submitJson(
+    const removed = await submitJson(
       `/api/internal/priests/${priest.id}`,
       "DELETE",
       null,
@@ -251,6 +247,10 @@ function EditablePriest({ priest }: { priest: ManagerPriest }) {
       setError,
       router.refresh
     );
+
+    if (removed) {
+      setShowDeleteConfirmation(false);
+    }
   }
 
   function updatePendingState(form: HTMLFormElement) {
@@ -301,7 +301,7 @@ function EditablePriest({ priest }: { priest: ManagerPriest }) {
             disabled={loading}
             title="Remover padre"
             type="button"
-            onClick={remove}
+            onClick={() => setShowDeleteConfirmation(true)}
           >
             <TrashIcon />
           </button>
@@ -317,6 +317,20 @@ function EditablePriest({ priest }: { priest: ManagerPriest }) {
         </button>
       </form>
       <ErrorText message={error} />
+      {savedSuccessfully ? (
+        <SuccessAlert
+          message="Alterações salvas com sucesso."
+          onDismiss={() => setSavedSuccessfully(false)}
+        />
+      ) : null}
+      <ConfirmationAlert
+        open={showDeleteConfirmation}
+        title={`Remover ${priest.name}?`}
+        description="O histórico será preservado e este cadastro poderá ser restaurado posteriormente."
+        loading={loading}
+        onCancel={() => setShowDeleteConfirmation(false)}
+        onConfirm={remove}
+      />
     </article>
   );
 }
@@ -379,6 +393,8 @@ function EditableAvailability({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [savedSuccessfully, setSavedSuccessfully] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   async function update(formData: FormData) {
     const saved = await submitJson(
@@ -397,11 +413,12 @@ function EditableAvailability({
 
     if (saved) {
       setHasChanges(false);
+      setSavedSuccessfully(true);
     }
   }
 
   async function remove() {
-    await submitJson(
+    const removed = await submitJson(
       `/api/internal/availabilities/${availability.id}`,
       "DELETE",
       null,
@@ -409,6 +426,10 @@ function EditableAvailability({
       setError,
       router.refresh
     );
+
+    if (removed) {
+      setShowDeleteConfirmation(false);
+    }
   }
 
   function updatePendingState(form: HTMLFormElement) {
@@ -473,7 +494,7 @@ function EditableAvailability({
             disabled={loading}
             title="Remover disponibilidade"
             type="button"
-            onClick={remove}
+            onClick={() => setShowDeleteConfirmation(true)}
           >
             <TrashIcon />
           </button>
@@ -489,6 +510,20 @@ function EditableAvailability({
         </button>
       </form>
       <ErrorText message={error} />
+      {savedSuccessfully ? (
+        <SuccessAlert
+          message="Alterações salvas com sucesso."
+          onDismiss={() => setSavedSuccessfully(false)}
+        />
+      ) : null}
+      <ConfirmationAlert
+        open={showDeleteConfirmation}
+        title="Remover esta disponibilidade?"
+        description={`A disponibilidade de ${availability.priest.name} às ${availability.startTime} deixará de aparecer na agenda.`}
+        loading={loading}
+        onCancel={() => setShowDeleteConfirmation(false)}
+        onConfirm={remove}
+      />
     </article>
   );
 }
@@ -548,6 +583,7 @@ function BlockedSlotRow({ blockedSlot }: { blockedSlot: ManagerBlockedSlot }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   async function toggleActive() {
     await submitJson(
@@ -561,7 +597,7 @@ function BlockedSlotRow({ blockedSlot }: { blockedSlot: ManagerBlockedSlot }) {
   }
 
   async function remove() {
-    await submitJson(
+    const removed = await submitJson(
       `/api/internal/blocked-slots/${blockedSlot.id}`,
       "DELETE",
       null,
@@ -569,6 +605,10 @@ function BlockedSlotRow({ blockedSlot }: { blockedSlot: ManagerBlockedSlot }) {
       setError,
       router.refresh
     );
+
+    if (removed) {
+      setShowDeleteConfirmation(false);
+    }
   }
 
   return (
@@ -596,12 +636,20 @@ function BlockedSlotRow({ blockedSlot }: { blockedSlot: ManagerBlockedSlot }) {
           className="quiet-danger-button compact-button"
           disabled={loading}
           type="button"
-          onClick={remove}
+          onClick={() => setShowDeleteConfirmation(true)}
         >
           Remover
         </button>
       </div>
       <ErrorText message={error} />
+      <ConfirmationAlert
+        open={showDeleteConfirmation}
+        title="Remover este bloqueio?"
+        description="O período voltará a ficar disponível para agendamentos, caso exista disponibilidade cadastrada."
+        loading={loading}
+        onCancel={() => setShowDeleteConfirmation(false)}
+        onConfirm={remove}
+      />
     </article>
   );
 }
@@ -626,6 +674,7 @@ function SettingRow({ setting }: { setting: ManagerSetting }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [savedSuccessfully, setSavedSuccessfully] = useState(false);
   const copy = settingCopy[setting.key] ?? {
     label: setting.key,
     description: setting.description ?? setting.valueType,
@@ -643,6 +692,7 @@ function SettingRow({ setting }: { setting: ManagerSetting }) {
 
     if (saved) {
       setHasChanges(false);
+      setSavedSuccessfully(true);
     }
   }
 
@@ -687,6 +737,12 @@ function SettingRow({ setting }: { setting: ManagerSetting }) {
         </button>
       </form>
       <ErrorText message={error} />
+      {savedSuccessfully ? (
+        <SuccessAlert
+          message="Alterações salvas com sucesso."
+          onDismiss={() => setSavedSuccessfully(false)}
+        />
+      ) : null}
     </article>
   );
 }

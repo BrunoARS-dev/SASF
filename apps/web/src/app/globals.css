@@ -990,6 +990,148 @@ a {
   padding: 0 18px;
 }
 
+.danger-button {
+  align-items: center;
+  background: var(--danger);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  color: #fff;
+  display: inline-flex;
+  font-weight: 780;
+  justify-content: center;
+  min-height: var(--control-height);
+  padding: 0 18px;
+}
+
+.danger-button:hover,
+.danger-button:focus-visible {
+  background: #852f27;
+  border-color: #852f27;
+  outline: none;
+}
+
+.danger-button:focus-visible {
+  box-shadow: 0 0 0 3px rgba(163, 59, 49, 0.2);
+}
+
+.danger-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.confirmation-alert-backdrop {
+  align-items: center;
+  background: rgba(20, 28, 24, 0.56);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 20px;
+  position: fixed;
+  z-index: 1000;
+}
+
+.confirmation-alert {
+  background: #fff;
+  border: 1px solid #edc7c0;
+  border-radius: calc(var(--radius) + 4px);
+  box-shadow: 0 24px 70px rgba(20, 28, 24, 0.24);
+  display: grid;
+  gap: 16px;
+  grid-template-columns: auto 1fr;
+  max-width: 460px;
+  padding: 24px;
+  width: 100%;
+}
+
+.confirmation-alert-icon {
+  align-items: center;
+  background: #fff2ef;
+  border-radius: 50%;
+  color: var(--danger);
+  display: flex;
+  height: 44px;
+  justify-content: center;
+  width: 44px;
+}
+
+.confirmation-alert-icon svg {
+  height: 22px;
+  width: 22px;
+}
+
+.confirmation-alert h2 {
+  font-size: 20px;
+  line-height: 1.25;
+  margin: 0 0 6px;
+}
+
+.confirmation-alert p {
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.confirmation-alert-actions {
+  display: flex;
+  gap: 10px;
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+}
+
+.success-alert {
+  align-items: center;
+  background: #f0f8f3;
+  border: 1px solid #bcd9c5;
+  border-radius: var(--radius);
+  box-shadow: 0 12px 36px rgba(20, 28, 24, 0.16);
+  color: var(--green-dark);
+  display: flex;
+  font-size: 14px;
+  font-weight: 750;
+  gap: 10px;
+  max-width: calc(100vw - 32px);
+  padding: 12px 14px;
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 1100;
+}
+
+.success-alert > svg {
+  flex: 0 0 20px;
+  height: 20px;
+  width: 20px;
+}
+
+.success-alert button {
+  background: transparent;
+  border: 0;
+  color: currentColor;
+  font-size: 20px;
+  line-height: 1;
+  padding: 2px;
+}
+
+@media (max-width: 600px) {
+  .confirmation-alert {
+    padding: 20px;
+  }
+
+  .confirmation-alert-actions {
+    flex-direction: column-reverse;
+  }
+
+  .confirmation-alert-actions button {
+    width: 100%;
+  }
+
+  .success-alert {
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+  }
+}
+
 .agenda-action-error {
   color: var(--danger);
   font-size: 13px;

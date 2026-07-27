@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { ConfirmationAlert, SuccessAlert } from './ui-feedback'
 
 type AgendaAction = 'realized' | 'absent' | 'cancel' | 'edit'
 
@@ -18,6 +19,8 @@ export function ManagerAgendaActions({
   const [pendingAction, setPendingAction] = useState<AgendaAction | null>(null)
   const [error, setError] = useState('')
   const [editing, setEditing] = useState(false)
+  const [savedSuccessfully, setSavedSuccessfully] = useState(false)
+  const [showCancelConfirmation, setShowCancelConfirmation] = useState(false)
   const [editStartAt, setEditStartAt] = useState(() => toDateTimeLocalValue(appointmentStartAt))
   const [now, setNow] = useState<number | null>(null)
   const appointmentStartTime = new Date(appointmentStartAt).getTime()
@@ -63,9 +66,6 @@ export function ManagerAgendaActions({
   }
 
   async function cancelAppointment() {
-    const confirmed = window.confirm('Cancelar este agendamento? Esta acao libera o horario para outro fiel.')
-    if (!confirmed) return
-
     setPendingAction('cancel')
     setError('')
 
@@ -79,6 +79,7 @@ export function ManagerAgendaActions({
         return
       }
 
+      setShowCancelConfirmation(false)
       router.refresh()
     } catch {
       setError('Nao foi possivel conectar agora.')
@@ -114,6 +115,7 @@ export function ManagerAgendaActions({
       }
 
       setEditing(false)
+      setSavedSuccessfully(true)
       router.refresh()
     } catch {
       setError('Nao foi possivel conectar agora.')
@@ -195,12 +197,28 @@ export function ManagerAgendaActions({
           className="quiet-danger-button compact-button"
           type="button"
           disabled={pendingAction !== null}
-          onClick={cancelAppointment}
+          onClick={() => setShowCancelConfirmation(true)}
         >
           {pendingAction === 'cancel' ? 'Cancelando...' : 'Cancelar'}
         </button>
       ) : null}
       {error ? <span className="agenda-action-error">{error}</span> : null}
+      {savedSuccessfully ? (
+        <SuccessAlert
+          message="Alterações salvas com sucesso."
+          onDismiss={() => setSavedSuccessfully(false)}
+        />
+      ) : null}
+      <ConfirmationAlert
+        open={showCancelConfirmation}
+        title="Cancelar este agendamento?"
+        description="Esta ação libera o horário para outro fiel."
+        confirmLabel="Confirmar cancelamento"
+        loadingLabel="Cancelando..."
+        loading={pendingAction === 'cancel'}
+        onCancel={() => setShowCancelConfirmation(false)}
+        onConfirm={cancelAppointment}
+      />
     </div>
   )
 }
@@ -209,11 +227,9 @@ export function DeleteCancelledAppointmentAction({ appointmentId }: { appointmen
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
 
   async function deleteAppointment() {
-    const confirmed = window.confirm('Excluir este agendamento cancelado?')
-    if (!confirmed) return
-
     setLoading(true)
     setError('')
 
@@ -227,6 +243,7 @@ export function DeleteCancelledAppointmentAction({ appointmentId }: { appointmen
         return
       }
 
+      setShowDeleteConfirmation(false)
       router.refresh()
     } catch {
       setError('Nao foi possivel conectar agora.')
@@ -237,10 +254,18 @@ export function DeleteCancelledAppointmentAction({ appointmentId }: { appointmen
 
   return (
     <div className="agenda-actions">
-      <button className="quiet-danger-button compact-button" type="button" disabled={loading} onClick={deleteAppointment}>
+      <button className="quiet-danger-button compact-button" type="button" disabled={loading} onClick={() => setShowDeleteConfirmation(true)}>
         {loading ? 'Excluindo...' : 'Excluir'}
       </button>
       {error ? <span className="agenda-action-error">{error}</span> : null}
+      <ConfirmationAlert
+        open={showDeleteConfirmation}
+        title="Excluir este agendamento cancelado?"
+        description="O registro será removido permanentemente e não poderá ser recuperado."
+        loading={loading}
+        onCancel={() => setShowDeleteConfirmation(false)}
+        onConfirm={deleteAppointment}
+      />
     </div>
   )
 }

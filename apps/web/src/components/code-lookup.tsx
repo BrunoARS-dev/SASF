@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import Link from 'next/link'
 import { formatDateLong, formatTime, LookupResponse, PublicAppointment, requestJson } from '@/lib/public-api'
+import { ConfirmationAlert } from './ui-feedback'
 
 export function CodeLookup() {
   const [code, setCode] = useState('')
@@ -12,6 +13,7 @@ export function CodeLookup() {
   const [canceling, setCanceling] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [showCancelConfirmation, setShowCancelConfirmation] = useState(false)
 
   async function lookup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -48,6 +50,7 @@ export function CodeLookup() {
       })
       setAppointment(null)
       setCode('')
+      setShowCancelConfirmation(false)
       setMessage('Agendamento cancelado. Se precisar, voce pode fazer um novo agendamento.')
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Nao foi possivel cancelar agora.')
@@ -85,12 +88,22 @@ export function CodeLookup() {
           <AppointmentResult
             appointment={appointment}
             canceling={canceling}
-            onCancel={cancelAppointment}
+            onCancel={() => setShowCancelConfirmation(true)}
           />
         ) : null}
 
         {message ? <div className="status-box ok">{message}</div> : null}
         {error ? <div className="status-box error">{error}</div> : null}
+        <ConfirmationAlert
+          open={showCancelConfirmation}
+          title="Cancelar este agendamento?"
+          description="Esta ação libera o horário para outro fiel e não poderá ser desfeita."
+          confirmLabel="Confirmar cancelamento"
+          loadingLabel="Cancelando..."
+          loading={canceling}
+          onCancel={() => setShowCancelConfirmation(false)}
+          onConfirm={cancelAppointment}
+        />
         <div className="back-action">
           <Link className="secondary-button compact-button back-arrow-button" aria-label="Voltar" href="/agendar">
             ←
