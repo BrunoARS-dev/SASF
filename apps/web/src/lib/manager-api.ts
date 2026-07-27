@@ -34,6 +34,34 @@ export type ManagerAgendaDay = {
   total: number
 }
 
+export type ManagerDashboard = {
+  totals: {
+    appointments: number
+    realized: number
+    absent: number
+    cancelled: number
+    pendingConfirmation: number
+    upcoming: number
+  }
+  attendanceRate: number | null
+  appointmentsByWeekday: Array<{
+    dayOfWeek: number
+    label: string
+    count: number
+  }>
+  mostRecurringDay: {
+    dayOfWeek: number
+    label: string
+    count: number
+  } | null
+  leastRecurringDay: {
+    dayOfWeek: number
+    label: string
+    count: number
+  } | null
+  generatedAt: string
+}
+
 export type PaginatedResponse<T> = {
   items: T[]
   page: number
@@ -120,6 +148,16 @@ export async function getAgendaDay(date: string): Promise<ManagerAgendaDay> {
   }
 
   return (await response.json()) as ManagerAgendaDay
+}
+
+export async function getDashboard(): Promise<ManagerDashboard> {
+  const response = await fetchAuthenticated('/appointments/dashboard')
+
+  if (!response.ok) {
+    return emptyDashboard()
+  }
+
+  return (await response.json()) as ManagerDashboard
 }
 
 export async function getPriests(): Promise<PaginatedResponse<ManagerPriest>> {
@@ -212,4 +250,36 @@ async function postAuthenticatedJson(path: string, body: unknown) {
     body: JSON.stringify(body),
     cache: 'no-store',
   })
+}
+
+function emptyDashboard(): ManagerDashboard {
+  const labels = [
+    'Domingo',
+    'Segunda-feira',
+    'Terça-feira',
+    'Quarta-feira',
+    'Quinta-feira',
+    'Sexta-feira',
+    'Sábado',
+  ]
+
+  return {
+    totals: {
+      appointments: 0,
+      realized: 0,
+      absent: 0,
+      cancelled: 0,
+      pendingConfirmation: 0,
+      upcoming: 0,
+    },
+    attendanceRate: null,
+    appointmentsByWeekday: labels.map((label, dayOfWeek) => ({
+      dayOfWeek,
+      label,
+      count: 0,
+    })),
+    mostRecurringDay: null,
+    leastRecurringDay: null,
+    generatedAt: new Date().toISOString(),
+  }
 }

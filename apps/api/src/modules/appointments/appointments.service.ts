@@ -278,6 +278,76 @@ export class AppointmentsService {
     }
   }
 
+  async getDashboard(actor?: AuthenticatedUser) {
+    await this.markExpiredAppointmentsPending()
+    const priestScope = await this.getPriestScopeForActor(actor)
+    const appointments = await this.prisma.appointment.findMany({
+      where: {
+        deletedAt: null,
+        ...(priestScope ? { priestId: priestScope } : {}),
+      },
+      select: {
+        status: true,
+        startAt: true,
+      },
+    })
+
+    const statusCounts: Record<AppointmentStatus, number> = {
+      AGENDADO: 0,
+      CANCELADO: 0,
+      PENDENTE_CONFIRMACAO: 0,
+      REALIZADO: 0,
+      AUSENTE: 0,
+    }
+    const appointmentsByWeekday = WEEKDAYS.map((label, dayOfWeek) => ({
+      dayOfWeek,
+      label,
+      count: 0,
+    }))
+    const now = new Date()
+    let upcoming = 0
+
+    for (const appointment of appointments) {
+      statusCounts[appointment.status] += 1
+      appointmentsByWeekday[getDayOfWeekInTimeZone(appointment.startAt)].count += 1
+
+      if (
+        appointment.startAt >= now &&
+        ACTIVE_APPOINTMENT_STATUSES.includes(appointment.status)
+      ) {
+        upcoming += 1
+      }
+    }
+
+    const recurringDays = appointmentsByWeekday.filter((day) => day.count > 0)
+    const mostRecurringDay = recurringDays.reduce<DashboardWeekday | null>(
+      (current, day) => (!current || day.count > current.count ? day : current),
+      null,
+    )
+    const leastRecurringDay = recurringDays.reduce<DashboardWeekday | null>(
+      (current, day) => (!current || day.count < current.count ? day : current),
+      null,
+    )
+    const concluded = statusCounts.REALIZADO + statusCounts.AUSENTE
+
+    return {
+      totals: {
+        appointments: appointments.length,
+        realized: statusCounts.REALIZADO,
+        absent: statusCounts.AUSENTE,
+        cancelled: statusCounts.CANCELADO,
+        pendingConfirmation: statusCounts.PENDENTE_CONFIRMACAO,
+        upcoming,
+      },
+      attendanceRate:
+        concluded > 0 ? Math.round((statusCounts.REALIZADO / concluded) * 1000) / 10 : null,
+      appointmentsByWeekday,
+      mostRecurringDay,
+      leastRecurringDay,
+      generatedAt: now.toISOString(),
+    }
+  }
+
   async createManual(dto: CreateManualAppointmentDto, actor?: AuthenticatedUser) {
     requireFields(dto as Record<string, unknown>, [
       'faithfulName',
@@ -1075,6 +1145,21 @@ const MINUTE_MS = 60 * 1000
 const HOUR_MS = 60 * MINUTE_MS
 const DAY_MS = 24 * HOUR_MS
 const ACTIVE_APPOINTMENT_STATUSES: AppointmentStatus[] = ['AGENDADO', 'PENDENTE_CONFIRMACAO']
+const WEEKDAYS = [
+  'Domingo',
+  'Segunda-feira',
+  'Terça-feira',
+  'Quarta-feira',
+  'Quinta-feira',
+  'Sexta-feira',
+  'Sábado',
+] as const
+
+type DashboardWeekday = {
+  dayOfWeek: number
+  label: string
+  count: number
+}
 
 function parseDateTime(value: string): Date {
   return localDateTimeToUtc(value)

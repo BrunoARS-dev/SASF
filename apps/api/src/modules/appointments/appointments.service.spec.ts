@@ -3,6 +3,39 @@ import { describe, expect, it, vi } from 'vitest'
 import { AppointmentsService } from './appointments.service'
 
 describe('AppointmentsService critical scheduling rules', () => {
+  it('builds strategic dashboard totals and weekday highlights from registered appointments', async () => {
+    const prisma = createPrismaMock({
+      appointmentFindMany: async () => [
+        { status: 'REALIZADO', startAt: new Date('2026-07-27T12:00:00.000Z') },
+        { status: 'REALIZADO', startAt: new Date('2026-07-27T13:00:00.000Z') },
+        { status: 'AUSENTE', startAt: new Date('2026-07-28T12:00:00.000Z') },
+        { status: 'CANCELADO', startAt: new Date('2026-07-27T14:00:00.000Z') },
+      ],
+    })
+    const service = createService(prisma)
+
+    const result = await service.getDashboard({
+      id: 'admin-1',
+      role: 'ADMIN',
+    } as any)
+
+    expect(result.totals).toMatchObject({
+      appointments: 4,
+      realized: 2,
+      absent: 1,
+      cancelled: 1,
+    })
+    expect(result.attendanceRate).toBe(66.7)
+    expect(result.mostRecurringDay).toMatchObject({
+      label: 'Segunda-feira',
+      count: 3,
+    })
+    expect(result.leastRecurringDay).toMatchObject({
+      label: 'Terça-feira',
+      count: 1,
+    })
+  })
+
   it('rejects public creation when the selected slot is already taken', async () => {
     const startAt = futureUtcDate(5, 10)
     const prisma = createPrismaMock({

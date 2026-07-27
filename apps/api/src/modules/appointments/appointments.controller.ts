@@ -53,6 +53,13 @@ export class AppointmentsController {
     return this.appointmentsService.listDay(query, user)
   }
 
+  @Get('appointments/dashboard')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('ADMIN', 'SECRETARIA', 'PADRE')
+  dashboard(@CurrentUser() user: AuthenticatedUser) {
+    return this.appointmentsService.getDashboard(user)
+  }
+
   @Post('appointments/manual')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('ADMIN', 'SECRETARIA')
