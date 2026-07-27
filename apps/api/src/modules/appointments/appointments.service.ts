@@ -309,12 +309,18 @@ export class AppointmentsService {
       label,
       count: 0,
     }))
+    const pendingByDate = new Map<string, number>()
     const now = new Date()
     let upcoming = 0
 
     for (const appointment of appointments) {
       statusCounts[appointment.status] += 1
       appointmentsByWeekday[getDayOfWeekInTimeZone(appointment.startAt)].count += 1
+
+      if (appointment.status === 'PENDENTE_CONFIRMACAO') {
+        const date = localDateKey(appointment.startAt)
+        pendingByDate.set(date, (pendingByDate.get(date) ?? 0) + 1)
+      }
 
       if (
         appointment.startAt >= now &&
@@ -347,6 +353,9 @@ export class AppointmentsService {
       attendanceRate:
         concluded > 0 ? Math.round((statusCounts.REALIZADO / concluded) * 1000) / 10 : null,
       appointmentsByWeekday,
+      pendingConfirmationByDate: [...pendingByDate.entries()]
+        .map(([date, count]) => ({ date, count }))
+        .sort((a, b) => a.date.localeCompare(b.date)),
       mostRecurringDay,
       leastRecurringDay,
       period: {
@@ -1217,6 +1226,18 @@ function dashboardPeriod(query: DashboardQueryDto) {
         }).format(startAt)
 
   return { range, year, month: range === 'month' ? month : null, label, startAt, endAt }
+}
+
+function localDateKey(date: Date) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date)
+  const value = (type: string) => parts.find((part) => part.type === type)?.value
+
+  return `${value('year')}-${value('month')}-${value('day')}`
 }
 
 function parseDateTime(value: string): Date {

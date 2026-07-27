@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ManualAppointmentPanel } from '@/components/manager-operation-panels'
 import { DeleteCancelledAppointmentAction, ManagerAgendaActions } from '@/components/manager-agenda-actions'
@@ -13,11 +12,13 @@ export function ManagerAgenda({
   date,
   agenda,
   priests,
+  pendingDates,
 }: {
   user: InternalUser
   date: string
   agenda: ManagerAgendaDay
   priests?: ManagerPriest[]
+  pendingDates: Array<{ date: string; count: number }>
 }) {
   const formattedDate = formatDate(date)
   const pendingCount = agenda.items.filter((item) => canMarkAttendance(item.status)).length
@@ -38,6 +39,7 @@ export function ManagerAgenda({
         isCreatingManual={isCreatingManual}
         onCreateManual={() => setIsCreatingManual(true)}
         onDateChange={() => setIsCreatingManual(false)}
+        pendingDates={pendingDates}
       />
 
       {canCreateManual && isCreatingManual ? (
@@ -67,23 +69,92 @@ export function ManagerAgenda({
   )
 }
 
+function AgendaMonthCalendar({
+  date,
+  pendingDates,
+}: {
+  date: string
+  pendingDates: Array<{ date: string; count: number }>
+}) {
+  const [year, month] = date.split('-').map(Number)
+  const firstDay = new Date(year, month - 1, 1, 12)
+  const daysInMonth = new Date(year, month, 0, 12).getDate()
+  const emptyDays = Array.from({ length: firstDay.getDay() })
+  const days = Array.from({ length: daysInMonth }, (_, index) => index + 1)
+  const pendingMap = new Map(pendingDates.map((item) => [item.date, item.count]))
+  const monthLabel = new Intl.DateTimeFormat('pt-BR', {
+    month: 'long',
+    year: 'numeric',
+  }).format(firstDay)
+
+  return (
+    <section className="agenda-month-calendar" aria-labelledby="agenda-calendar-title">
+      <div className="agenda-calendar-heading">
+        <div>
+          <span>Calendário</span>
+          <h2 id="agenda-calendar-title">{monthLabel}</h2>
+        </div>
+        <div className="agenda-calendar-legend">
+          <i aria-hidden="true" />
+          Aguardando confirmação
+        </div>
+      </div>
+      <div className="agenda-calendar-grid">
+        {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((weekday, index) => (
+          <span className="agenda-calendar-weekday" key={`${weekday}-${index}`}>
+            {weekday}
+          </span>
+        ))}
+        {emptyDays.map((_, index) => (
+          <span aria-hidden="true" key={`empty-${index}`} />
+        ))}
+        {days.map((day) => {
+          const dayDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+          const pendingCount = pendingMap.get(dayDate) ?? 0
+          const selected = dayDate === date
+
+          return (
+            <Link
+              className="agenda-calendar-day"
+              data-selected={selected || undefined}
+              href={`/gestor/agenda?date=${dayDate}`}
+              key={dayDate}
+              aria-label={`${day} de ${monthLabel}${pendingCount ? `, ${pendingCount} aguardando confirmação` : ''}`}
+            >
+              {day}
+              {pendingCount ? (
+                <span className="agenda-calendar-pending" title={`${pendingCount} aguardando confirmação`}>
+                  {pendingCount > 1 ? pendingCount : ''}
+                </span>
+              ) : null}
+            </Link>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
 function AgendaDateControls({
   date,
   canCreateManual,
   isCreatingManual,
   onCreateManual,
   onDateChange,
+  pendingDates,
 }: {
   date: string
   canCreateManual: boolean
   isCreatingManual: boolean
   onCreateManual: () => void
   onDateChange: () => void
+  pendingDates: Array<{ date: string; count: number }>
 }) {
-  const router = useRouter()
+  const [calendarOpen, setCalendarOpen] = useState(false)
   const previousDate = addDays(date, -1)
   const nextDate = addDays(date, 1)
   const today = todayDateOnly()
+  const pendingCount = pendingDates.reduce((total, item) => total + item.count, 0)
 
   return (
     <div className="agenda-date-controls" aria-label="Escolher data da agenda">
@@ -98,27 +169,53 @@ function AgendaDateControls({
       </Link>
       <div className="agenda-date-form">
         <label htmlFor="agenda-date">Data</label>
-        <input
+        <button
+          aria-controls="agenda-month-calendar"
+          aria-expanded={calendarOpen}
+          className="agenda-date-picker"
           id="agenda-date"
-          name="date"
-          type="date"
-          defaultValue={date}
-          onChange={(event) => {
-            if (!event.target.value) {
-              return
-            }
-
+          type="button"
+          onClick={() => {
             onDateChange()
-            router.push(`/gestor/agenda?date=${event.target.value}`)
+            setCalendarOpen((open) => !open)
           }}
-        />
+        >
+          <span>{formatNumericDate(date)}</span>
+          <span className="agenda-date-picker-icon" aria-hidden="true">
+            <CalendarIcon />
+            {pendingCount > 0 ? (
+              <i className="agenda-date-picker-badge">
+                {pendingCount > 9 ? '9+' : pendingCount}
+              </i>
+            ) : null}
+          </span>
+        </button>
         {canCreateManual && !isCreatingManual ? (
           <button className="primary-button compact-button" type="button" onClick={onCreateManual}>
             Agendar
           </button>
         ) : null}
       </div>
+      {calendarOpen ? (
+        <div className="agenda-calendar-popover" id="agenda-month-calendar">
+          <AgendaMonthCalendar date={date} pendingDates={pendingDates} />
+        </div>
+      ) : null}
     </div>
+  )
+}
+
+function CalendarIcon() {
+  return (
+    <svg fill="none" viewBox="0 0 24 24">
+      <path
+        d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm3 8h2m2 0h2m2 0h1m-9 4h2m2 0h2"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.7"
+      />
+    </svg>
   )
 }
 
@@ -183,6 +280,11 @@ function formatDate(date: string) {
     day: '2-digit',
     month: 'long',
   }).format(new Date(`${date}T12:00:00`))
+}
+
+function formatNumericDate(date: string) {
+  const [year, month, day] = date.split('-')
+  return `${day}/${month}/${year}`
 }
 
 function addDays(date: string, days: number) {

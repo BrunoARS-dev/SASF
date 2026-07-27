@@ -909,6 +909,55 @@ a {
   border-top: 3px solid #c38a26;
 }
 
+.dashboard-pending-metric {
+  gap: 5px;
+}
+
+.dashboard-pending-dates {
+  align-self: end;
+  display: grid;
+  gap: 3px;
+}
+
+.dashboard-pending-dates > a:not(.dashboard-pending-more) {
+  align-items: center;
+  border-radius: 5px;
+  color: var(--ink);
+  display: grid;
+  font-size: 12px;
+  gap: 6px;
+  grid-template-columns: 7px auto 1fr;
+  min-height: 20px;
+}
+
+.dashboard-pending-dates > a:hover,
+.dashboard-pending-dates > a:focus-visible {
+  background: #fff8e8;
+  outline: none;
+}
+
+.dashboard-pending-dates i,
+.agenda-calendar-legend i {
+  background: #d98b16;
+  border-radius: 50%;
+  display: block;
+  height: 7px;
+  width: 7px;
+}
+
+.dashboard-pending-dates small {
+  color: var(--muted);
+  font-size: 11px;
+  text-align: right;
+}
+
+.dashboard-pending-more {
+  color: var(--green-dark);
+  font-size: 11px;
+  font-weight: 760;
+  padding-left: 13px;
+}
+
 .dashboard-demand {
   background: #fff;
   border: 1px solid var(--line);
@@ -1057,6 +1106,106 @@ a {
   margin-top: 24px;
 }
 
+.agenda-month-calendar {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-top: 16px;
+  padding: 16px;
+}
+
+.agenda-calendar-heading {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.agenda-calendar-heading > div:first-child > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.agenda-calendar-heading h2 {
+  font-size: 19px;
+  margin: 2px 0 0;
+  text-transform: capitalize;
+}
+
+.agenda-calendar-legend {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 12px;
+  gap: 7px;
+}
+
+.agenda-calendar-grid {
+  display: grid;
+  gap: 5px;
+  grid-template-columns: repeat(7, minmax(34px, 1fr));
+}
+
+.agenda-calendar-weekday {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px;
+  text-align: center;
+}
+
+.agenda-calendar-day {
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: var(--ink);
+  display: flex;
+  font-size: 13px;
+  font-weight: 700;
+  height: 38px;
+  justify-content: center;
+  position: relative;
+}
+
+.agenda-calendar-day:hover,
+.agenda-calendar-day:focus-visible {
+  background: var(--surface-soft);
+  border-color: var(--line-strong);
+  outline: none;
+}
+
+.agenda-calendar-day[data-selected] {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+
+.agenda-calendar-pending {
+  align-items: center;
+  background: #d98b16;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  color: #fff;
+  display: flex;
+  font-size: 8px;
+  font-weight: 850;
+  height: 13px;
+  justify-content: center;
+  min-width: 13px;
+  padding: 0 2px;
+  position: absolute;
+  right: 3px;
+  top: 3px;
+}
+
+.agenda-calendar-day[data-selected] .agenda-calendar-pending {
+  border-color: var(--green);
+}
+
 .agenda-date-controls {
   align-items: end;
   display: grid;
@@ -1080,15 +1229,66 @@ a {
   text-transform: uppercase;
 }
 
-.agenda-date-form input {
+.agenda-date-picker {
+  align-items: center;
   background: #fff;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
   color: var(--ink);
+  display: flex;
   font: inherit;
+  justify-content: space-between;
   min-height: var(--control-height);
   padding: 0 12px;
+  text-align: left;
   width: 100%;
+}
+
+.agenda-date-picker:hover,
+.agenda-date-picker:focus-visible,
+.agenda-date-picker[aria-expanded="true"] {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(31, 111, 74, 0.12);
+  outline: none;
+}
+
+.agenda-date-picker-icon {
+  color: var(--green-dark);
+  height: 20px;
+  position: relative;
+  width: 20px;
+}
+
+.agenda-date-picker-icon svg {
+  height: 20px;
+  width: 20px;
+}
+
+.agenda-date-picker-badge {
+  align-items: center;
+  background: #d98b16;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  color: #fff;
+  display: flex;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 850;
+  height: 15px;
+  justify-content: center;
+  min-width: 15px;
+  padding: 0 2px;
+  position: absolute;
+  right: -8px;
+  top: -7px;
+}
+
+.agenda-calendar-popover {
+  grid-column: 1 / -1;
+}
+
+.agenda-calendar-popover .agenda-month-calendar {
+  margin-top: 0;
 }
 
 .agenda-summary-item,

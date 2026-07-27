@@ -65,6 +65,28 @@ describe('AppointmentsService critical scheduling rules', () => {
     })
   })
 
+  it('groups pending confirmations by their local appointment date', async () => {
+    const prisma = createPrismaMock({
+      appointmentFindMany: async () => [
+        { status: 'PENDENTE_CONFIRMACAO', startAt: new Date('2026-07-25T02:30:00.000Z') },
+        { status: 'PENDENTE_CONFIRMACAO', startAt: new Date('2026-07-25T15:00:00.000Z') },
+        { status: 'PENDENTE_CONFIRMACAO', startAt: new Date('2026-07-26T15:00:00.000Z') },
+      ],
+    })
+    const service = createService(prisma)
+
+    const result = await service.getDashboard(
+      { range: 'all' },
+      { id: 'admin-1', role: 'ADMIN' } as any,
+    )
+
+    expect(result.pendingConfirmationByDate).toEqual([
+      { date: '2026-07-24', count: 1 },
+      { date: '2026-07-25', count: 1 },
+      { date: '2026-07-26', count: 1 },
+    ])
+  })
+
   it('rejects public creation when the selected slot is already taken', async () => {
     const startAt = futureUtcDate(5, 10)
     const prisma = createPrismaMock({

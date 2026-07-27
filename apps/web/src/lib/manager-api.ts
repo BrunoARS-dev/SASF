@@ -49,6 +49,10 @@ export type ManagerDashboard = {
     label: string
     count: number
   }>
+  pendingConfirmationByDate: Array<{
+    date: string
+    count: number
+  }>
   mostRecurringDay: {
     dayOfWeek: number
     label: string
@@ -293,6 +297,7 @@ function emptyDashboard(): ManagerDashboard {
       label,
       count: 0,
     })),
+    pendingConfirmationByDate: [],
     mostRecurringDay: null,
     leastRecurringDay: null,
     period: {

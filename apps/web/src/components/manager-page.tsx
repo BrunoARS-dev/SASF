@@ -64,12 +64,7 @@ export function ManagerHome({
           detail="Entre realizados e ausências"
           tone="positive"
         />
-        <MetricCard
-          label="Aguardando confirmação"
-          value={dashboard.totals.pendingConfirmation}
-          detail="Atendimentos passados pendentes"
-          tone="warning"
-        />
+        <PendingMetricCard dashboard={dashboard} />
       </section>
 
       <section className="dashboard-demand" aria-labelledby="weekday-demand-title">
@@ -112,6 +107,38 @@ export function ManagerHome({
         </div>
       </section>
     </div>
+  )
+}
+
+function PendingMetricCard({ dashboard }: { dashboard: ManagerDashboard }) {
+  const visibleDates = dashboard.pendingConfirmationByDate.slice(0, 2)
+  const remainingDates = dashboard.pendingConfirmationByDate.length - visibleDates.length
+
+  return (
+    <article className="dashboard-metric dashboard-metric-warning dashboard-pending-metric">
+      <span>Aguardando confirmação</span>
+      <strong>{formatNumber(dashboard.totals.pendingConfirmation)}</strong>
+      {visibleDates.length > 0 ? (
+        <div className="dashboard-pending-dates">
+          {visibleDates.map((item) => (
+            <Link key={item.date} href={`/gestor/agenda?date=${item.date}`}>
+              <i aria-hidden="true" />
+              <span>{formatShortDate(item.date)}</span>
+              <small>
+                {item.count} pendente{item.count === 1 ? '' : 's'}
+              </small>
+            </Link>
+          ))}
+          {remainingDates > 0 ? (
+            <Link className="dashboard-pending-more" href={`/gestor/agenda?date=${visibleDates[0].date}`}>
+              + {remainingDates} {remainingDates === 1 ? 'outra data' : 'outras datas'}
+            </Link>
+          ) : null}
+        </div>
+      ) : (
+        <small>Nenhum atendimento pendente</small>
+      )}
+    </article>
   )
 }
 
@@ -242,6 +269,11 @@ function formatNumber(value: number) {
 
 function shortWeekday(label: string) {
   return label.replace('-feira', '')
+}
+
+function formatShortDate(date: string) {
+  const [, month, day] = date.split('-')
+  return `${day}/${month}`
 }
 
 export function ManagerPlaceholder({

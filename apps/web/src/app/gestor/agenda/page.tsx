@@ -1,6 +1,6 @@
 import { ManagerAgenda } from '@/components/manager-agenda'
 import { getCurrentUser } from '@/lib/auth'
-import { getAgendaDay, getPriests, todayDateOnly } from '@/lib/manager-api'
+import { getAgendaDay, getDashboard, getPriests, todayDateOnly } from '@/lib/manager-api'
 import type { ManagerPriest } from '@/lib/manager-api'
 
 export default async function AgendaPage({ searchParams }: { searchParams?: Promise<{ date?: string }> }) {
@@ -9,12 +9,22 @@ export default async function AgendaPage({ searchParams }: { searchParams?: Prom
 
   const params = await searchParams
   const date = params?.date ?? todayDateOnly()
-  const [agenda, priests] = await Promise.all([
+  const [year, month] = date.split('-').map(Number)
+  const [agenda, priests, dashboard] = await Promise.all([
     getAgendaDay(date),
     user.role === 'ADMIN' || user.role === 'SECRETARIA'
       ? getPriests()
       : Promise.resolve({ items: [] as ManagerPriest[] }),
+    getDashboard({ range: 'month', year, month }),
   ])
 
-  return <ManagerAgenda user={user} date={date} agenda={agenda} priests={priests.items} />
+  return (
+    <ManagerAgenda
+      user={user}
+      date={date}
+      agenda={agenda}
+      priests={priests.items}
+      pendingDates={dashboard.pendingConfirmationByDate}
+    />
+  )
 }
