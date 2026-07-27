@@ -55,45 +55,130 @@ export class PriestsService {
       throw badRequest('Senha deve ter pelo menos 8 caracteres.')
     }
 
-    const priest = await this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          name,
-          username,
-          email,
-          passwordHash: await this.passwordService.hash(password),
-          role: 'PADRE',
-          active: dto.active ?? true,
-        },
-        select: { id: true },
-      })
+    const active = dto.active ?? true
+    const passwordHash = await this.passwordService.hash(password)
 
-      const created = await tx.priest.create({
-        data: {
-          userId: user.id,
-          name,
-          active: dto.active ?? true,
-          appointmentDurationMin,
-        },
-        select: PRIEST_SELECT,
-      })
-
-      await this.auditService.recordSafeMutation(
-        {
-          actorUserId: actor?.id,
-          action: 'PRIEST_CREATED',
-          entityType: 'Priest',
-          entityId: created.id,
-          metadataSafe: {
-            active: created.active,
-            appointmentDurationMin: created.appointmentDurationMin,
+    let priest: PriestPayload
+    try {
+      priest = await this.prisma.$transaction(async (tx) => {
+        const matchingUsers = await tx.user.findMany({
+          where: {
+            OR: [{ username }, { email }],
           },
-        },
-        tx,
-      )
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            deletedAt: true,
+            priestProfile: {
+              select: {
+                id: true,
+                deletedAt: true,
+              },
+            },
+          },
+        })
 
-      return created
-    })
+        const usernameOwner = matchingUsers.find((user) => user.username === username)
+        const emailOwner = matchingUsers.find((user) => user.email === email)
+
+        if (usernameOwner && emailOwner && usernameOwner.id !== emailOwner.id) {
+          throw badRequest('Usuario e e-mail pertencem a cadastros diferentes.')
+        }
+
+        const existingUser = usernameOwner ?? emailOwner
+        if (existingUser) {
+          const existingPriest = existingUser.priestProfile
+          if (!existingUser.deletedAt || !existingPriest?.deletedAt) {
+            throw badRequest('Usuario ou e-mail ja cadastrado.')
+          }
+
+          await tx.user.update({
+            where: { id: existingUser.id },
+            data: {
+              name,
+              username,
+              email,
+              passwordHash,
+              role: 'PADRE',
+              active,
+              deletedAt: null,
+            },
+          })
+
+          const restored = await tx.priest.update({
+            where: { id: existingPriest.id },
+            data: {
+              name,
+              active,
+              appointmentDurationMin,
+              deletedAt: null,
+            },
+            select: PRIEST_SELECT,
+          })
+
+          await this.auditService.recordSafeMutation(
+            {
+              actorUserId: actor?.id,
+              action: 'PRIEST_RESTORED',
+              entityType: 'Priest',
+              entityId: restored.id,
+              metadataSafe: {
+                active: restored.active,
+                appointmentDurationMin: restored.appointmentDurationMin,
+              },
+            },
+            tx,
+          )
+
+          return restored
+        }
+
+        const user = await tx.user.create({
+          data: {
+            name,
+            username,
+            email,
+            passwordHash,
+            role: 'PADRE',
+            active,
+          },
+          select: { id: true },
+        })
+
+        const created = await tx.priest.create({
+          data: {
+            userId: user.id,
+            name,
+            active,
+            appointmentDurationMin,
+          },
+          select: PRIEST_SELECT,
+        })
+
+        await this.auditService.recordSafeMutation(
+          {
+            actorUserId: actor?.id,
+            action: 'PRIEST_CREATED',
+            entityType: 'Priest',
+            entityId: created.id,
+            metadataSafe: {
+              active: created.active,
+              appointmentDurationMin: created.appointmentDurationMin,
+            },
+          },
+          tx,
+        )
+
+        return created
+      })
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        throw badRequest('Usuario ou e-mail ja cadastrado.')
+      }
+
+      throw error
+    }
 
     return { priest: toPriestResponse(priest) }
   }
@@ -281,6 +366,13 @@ function badRequest(message: string) {
     code: AppErrorCodes.BAD_REQUEST,
     message,
   })
+}
+
+function isUniqueConstraintError(error: unknown) {
+  return typeof error === 'object'
+    && error !== null
+    && 'code' in error
+    && error.code === 'P2002'
 }
 
 function boundedPositiveInt(

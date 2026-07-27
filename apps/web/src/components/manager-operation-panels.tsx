@@ -154,10 +154,20 @@ export function PriestsPanel({ priests }: { priests: ManagerPriest[] }) {
   const [loading, setLoading] = useState(false);
 
   async function createPriest(formData: FormData) {
+    const appointmentDurationMin = numberOrUndefined(
+      formData.get("appointmentDurationMin")
+    );
+
     await submitJson(
       "/api/internal/priests",
       "POST",
-      formDataToObject(formData),
+      {
+        name: String(formData.get("name") ?? ""),
+        username: String(formData.get("username") ?? ""),
+        email: String(formData.get("email") ?? ""),
+        password: String(formData.get("password") ?? ""),
+        appointmentDurationMin,
+      },
       setLoading,
       setError,
       router.refresh
@@ -201,9 +211,10 @@ function EditablePriest({ priest }: { priest: ManagerPriest }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
   async function update(formData: FormData) {
-    await submitJson(
+    const saved = await submitJson(
       `/api/internal/priests/${priest.id}`,
       "PATCH",
       {
@@ -217,9 +228,21 @@ function EditablePriest({ priest }: { priest: ManagerPriest }) {
       setError,
       router.refresh
     );
+
+    if (saved) {
+      setHasChanges(false);
+    }
   }
 
   async function remove() {
+    const confirmed = window.confirm(
+      `Remover ${priest.name}? O histórico será preservado e o cadastro poderá ser restaurado posteriormente.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     await submitJson(
       `/api/internal/priests/${priest.id}`,
       "DELETE",
@@ -227,6 +250,16 @@ function EditablePriest({ priest }: { priest: ManagerPriest }) {
       setLoading,
       setError,
       router.refresh
+    );
+  }
+
+  function updatePendingState(form: HTMLFormElement) {
+    const formData = new FormData(form);
+    setHasChanges(
+      String(formData.get("name") ?? "") !== priest.name ||
+        String(formData.get("appointmentDurationMin") ?? "") !==
+          String(priest.appointmentDurationMin ?? "") ||
+        (formData.get("active") === "on") !== priest.active
     );
   }
 
@@ -243,16 +276,23 @@ function EditablePriest({ priest }: { priest: ManagerPriest }) {
           name="name"
           defaultValue={priest.name}
           aria-label="Nome do padre"
+          onInput={(event) => updatePendingState(event.currentTarget.form!)}
         />
         <input
           name="appointmentDurationMin"
           defaultValue={priest.appointmentDurationMin ?? ""}
           inputMode="numeric"
           aria-label="Duracao"
+          onInput={(event) => updatePendingState(event.currentTarget.form!)}
         />
         <div className="manager-status-actions">
           <label className="check-row">
-            <input name="active" type="checkbox" defaultChecked={priest.active} />{" "}
+            <input
+              name="active"
+              type="checkbox"
+              defaultChecked={priest.active}
+              onChange={(event) => updatePendingState(event.currentTarget.form!)}
+            />{" "}
             Ativo
           </label>
           <button
@@ -267,11 +307,13 @@ function EditablePriest({ priest }: { priest: ManagerPriest }) {
           </button>
         </div>
         <button
-          className="secondary-button compact-button"
+          className={`${
+            hasChanges ? "primary-button" : "secondary-button"
+          } compact-button`}
           disabled={loading}
           type="submit"
         >
-          Salvar
+          {loading ? "Salvando..." : "Salvar"}
         </button>
       </form>
       <ErrorText message={error} />
