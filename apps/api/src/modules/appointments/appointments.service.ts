@@ -385,14 +385,16 @@ export class AppointmentsService {
     const rules = await this.getSchedulingRules()
     const startAt = parseDateTime(dto.startAt as string)
     const faithful = this.normalizeFaithful(dto)
+    const priestScope = await this.getPriestScopeForActor(actor)
 
     this.assertValidDate(startAt)
 
     return this.runSerializableTransaction(async (tx) => {
       await this.assertNoFutureActiveAppointment(tx, faithful.phone, faithful.lastName, now)
 
-      const priestSlot = dto.priestId
-        ? await this.findSpecificManualPriestSlot(tx, dto.priestId, startAt, rules)
+      const selectedPriestId = priestScope ?? dto.priestId
+      const priestSlot = selectedPriestId
+        ? await this.findSpecificManualPriestSlot(tx, selectedPriestId, startAt, rules)
         : await this.findEligibleManualPriestSlot(tx, startAt, rules)
 
       if (!priestSlot) {
@@ -451,6 +453,9 @@ export class AppointmentsService {
         id,
         deletedAt: null,
         status: { in: ACTIVE_APPOINTMENT_STATUSES },
+        ...(actor?.role === 'PADRE'
+          ? { priest: { userId: actor.id } }
+          : {}),
       },
       select: { id: true },
     })
@@ -500,6 +505,9 @@ export class AppointmentsService {
         id,
         deletedAt: null,
         status: 'CANCELADO',
+        ...(actor?.role === 'PADRE'
+          ? { priest: { userId: actor.id } }
+          : {}),
       },
       select: { id: true },
     })
@@ -556,6 +564,9 @@ export class AppointmentsService {
           id,
           deletedAt: null,
           status: { in: ACTIVE_APPOINTMENT_STATUSES },
+          ...(actor?.role === 'PADRE'
+            ? { priest: { userId: actor.id } }
+            : {}),
         },
         select: {
           id: true,
@@ -761,10 +772,6 @@ export class AppointmentsService {
         priest: {
           active: true,
           deletedAt: null,
-          user: {
-            active: true,
-            deletedAt: null,
-          },
         },
       },
       orderBy: [{ priestId: 'asc' }, { startTime: 'asc' }],
@@ -799,10 +806,6 @@ export class AppointmentsService {
         priest: {
           active: true,
           deletedAt: null,
-          user: {
-            active: true,
-            deletedAt: null,
-          },
         },
       },
       orderBy: { startTime: 'asc' },
@@ -830,10 +833,6 @@ export class AppointmentsService {
         id: priestId,
         active: true,
         deletedAt: null,
-        user: {
-          active: true,
-          deletedAt: null,
-        },
       },
       select: {
         id: true,
@@ -857,10 +856,6 @@ export class AppointmentsService {
       where: {
         active: true,
         deletedAt: null,
-        user: {
-          active: true,
-          deletedAt: null,
-        },
       },
       orderBy: { id: 'asc' },
       select: {

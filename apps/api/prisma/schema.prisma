@@ -33,6 +33,7 @@ model User {
   username     String   @unique @db.VarChar(80)
   email        String   @unique @db.VarChar(160)
   passwordHash String   @db.VarChar(255)
+  sessionVersion Int    @default(1)
   role         UserRole
   active       Boolean  @default(true)
   lastLoginAt  DateTime?
@@ -40,6 +41,7 @@ model User {
   updatedAt    DateTime @updatedAt
   deletedAt    DateTime?
 
+  roleDefinition AccessRole @relation(fields: [role], references: [key], onDelete: Restrict)
   priestProfile Priest?
   blockedSlots  BlockedSlot[] @relation("BlockedSlotCreator")
   settings      SystemSetting[] @relation("SystemSettingUpdater")
@@ -52,9 +54,47 @@ model User {
   @@map("users")
 }
 
+model AccessRole {
+  key         UserRole @id
+  name        String   @db.VarChar(80)
+  description String?  @db.VarChar(180)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("access_roles")
+}
+
+model Permission {
+  key         String  @id @db.VarChar(100)
+  name        String  @db.VarChar(120)
+  group       String  @db.VarChar(80)
+  description String? @db.VarChar(180)
+
+  roles RolePermission[]
+
+  @@index([group])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleKey      UserRole
+  permissionKey String   @db.VarChar(100)
+  createdAt    DateTime  @default(now())
+
+  role       AccessRole @relation(fields: [roleKey], references: [key], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionKey], references: [key], onDelete: Cascade)
+
+  @@id([roleKey, permissionKey])
+  @@index([permissionKey])
+  @@map("role_permissions")
+}
+
 model Priest {
   id                     String   @id @default(cuid())
-  userId                 String   @unique
+  userId                 String?  @unique
   name                   String   @db.VarChar(120)
   active                 Boolean  @default(true)
   appointmentDurationMin Int?
@@ -62,7 +102,7 @@ model Priest {
   updatedAt              DateTime @updatedAt
   deletedAt              DateTime?
 
-  user           User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  user           User?          @relation(fields: [userId], references: [id], onDelete: Restrict)
   availabilities Availability[]
   blockedSlots   BlockedSlot[]
   appointments   Appointment[]

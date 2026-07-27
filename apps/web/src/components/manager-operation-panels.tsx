@@ -269,7 +269,9 @@ function EditablePriest({ priest }: { priest: ManagerPriest }) {
         <div>
           <strong>{priest.name}</strong>
           <span>
-            {priest.user.username} · {priest.user.email}
+            {priest.user
+              ? `${priest.user.username} · ${priest.user.email}`
+              : "Sem conta vinculada"}
           </span>
         </div>
         <input

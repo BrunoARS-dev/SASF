@@ -7,7 +7,7 @@ export default async function ConfiguracoesPage() {
   const user = await getCurrentUser()
   if (!user) return null
 
-  if (!canAccess(user.role, 'configuracoes')) {
+  if (!canAccess(user, 'configuracoes')) {
     return (
       <ManagerPlaceholder
         user={user}

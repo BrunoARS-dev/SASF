@@ -7,7 +7,7 @@ export default async function BloqueiosPage() {
   const user = await getCurrentUser()
   if (!user) return null
 
-  if (!canAccess(user.role, 'bloqueios')) {
+  if (!canAccess(user, 'bloqueios')) {
     return (
       <ManagerPlaceholder
         user={user}

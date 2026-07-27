@@ -10,10 +10,12 @@ export function ManagerAgendaActions({
   appointmentId,
   appointmentStartAt,
   canCancel = false,
+  canConfirmAttendance = false,
 }: {
   appointmentId: string
   appointmentStartAt: string
   canCancel?: boolean
+  canConfirmAttendance?: boolean
 }) {
   const router = useRouter()
   const [pendingAction, setPendingAction] = useState<AgendaAction | null>(null)
@@ -159,7 +161,7 @@ export function ManagerAgendaActions({
           </button>
         </form>
       ) : null}
-      {attendanceAvailable ? (
+      {attendanceAvailable && canConfirmAttendance ? (
         <>
           <button
             className="secondary-button compact-button"

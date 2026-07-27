@@ -1,15 +1,18 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto'
-import { Roles } from '../auth/decorators/roles.decorator'
+import { CurrentUser } from '../auth/decorators/current-user.decorator'
+import { Permissions } from '../auth/decorators/permissions.decorator'
+import type { AuthenticatedUser } from '../auth/auth.types'
 import { AuthGuard } from '../auth/guards/auth.guard'
-import { RolesGuard } from '../auth/guards/roles.guard'
+import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { CreateUserDto } from './dto/create-user.dto'
 import { ResetUserPasswordDto } from './dto/reset-user-password.dto'
+import { UpdateUserDto } from './dto/update-user.dto'
 import { UsersService } from './users.service'
 
 @Controller('users')
-@UseGuards(AuthGuard, RolesGuard)
-@Roles('ADMIN')
+@UseGuards(AuthGuard, PermissionsGuard)
+@Permissions('user.manage')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -19,12 +22,25 @@ export class UsersController {
   }
 
   @Post()
-  create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto)
+  create(@Body() dto: CreateUserDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.usersService.create(dto, user)
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.usersService.update(id, dto, user)
   }
 
   @Patch(':id/password')
-  resetPassword(@Param('id') id: string, @Body() dto: ResetUserPasswordDto) {
-    return this.usersService.resetPassword(id, dto)
+  resetPassword(
+    @Param('id') id: string,
+    @Body() dto: ResetUserPasswordDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.usersService.resetPassword(id, dto, user)
   }
 }

@@ -1,13 +1,13 @@
 import { ManagerPlaceholder } from '@/components/manager-page'
-import { PriestsPanel } from '@/components/manager-operation-panels'
-import { canAccess, getCurrentUser } from '@/lib/auth'
-import { getPriests } from '@/lib/manager-api'
+import { PriestsPanel } from '@/components/priests-panel'
+import { canAccess, getCurrentUser, hasPermission } from '@/lib/auth'
+import { getPriests, getUnlinkedPriestUsers } from '@/lib/manager-api'
 
 export default async function PadresPage() {
   const user = await getCurrentUser()
   if (!user) return null
 
-  if (!canAccess(user.role, 'padres')) {
+  if (!canAccess(user, 'padres')) {
     return (
       <ManagerPlaceholder
         user={user}
@@ -18,7 +18,18 @@ export default async function PadresPage() {
     )
   }
 
-  const priests = await getPriests()
+  const canManage = hasPermission(user, 'priest.manage')
+  const [priests, unlinkedUsers] = await Promise.all([
+    getPriests(),
+    canManage ? getUnlinkedPriestUsers() : Promise.resolve({ items: [] }),
+  ])
 
-  return <PriestsPanel priests={priests.items} />
+  return (
+    <PriestsPanel
+      priests={priests.items}
+      unlinkedUsers={unlinkedUsers.items}
+      canManage={canManage}
+      canDelete={hasPermission(user, 'priest.delete')}
+    />
+  )
 }

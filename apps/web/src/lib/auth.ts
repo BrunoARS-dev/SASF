@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers'
+import { hasPermission } from './permissions'
 
 const API_URL = process.env.API_URL ?? 'http://localhost:3001'
 const API_PREFIX = '/api/v1'
@@ -11,6 +12,7 @@ export type InternalUser = {
   username: string
   email: string
   role: InternalRole
+  permissions: string[]
 }
 
 export type AuthSession = {
@@ -50,53 +52,58 @@ export async function getCurrentUser(): Promise<InternalUser | null> {
   }
 }
 
-export function canAccess(role: InternalRole, route: InternalRouteKey) {
-  return INTERNAL_ROUTES[route].roles.includes(role)
+export { hasPermission }
+
+export function canAccess(user: InternalUser, route: InternalRouteKey) {
+  return hasPermission(user, INTERNAL_ROUTES[route].permission)
 }
 
 type InternalRouteConfig = {
   href: string
   label: string
-  roles: InternalRole[]
+  permission: string
 }
-
-const roles = (...items: InternalRole[]): InternalRole[] => items
 
 export const INTERNAL_ROUTES = {
   dashboard: {
     href: '/gestor',
     label: 'Inicio',
-    roles: roles('ADMIN', 'SECRETARIA', 'PADRE'),
+    permission: 'dashboard.view',
   },
   agenda: {
     href: '/gestor/agenda',
     label: 'Agenda',
-    roles: roles('ADMIN', 'SECRETARIA', 'PADRE'),
+    permission: 'agenda.view',
   },
   configuracoes: {
     href: '/gestor/configuracoes',
     label: 'Configuracoes',
-    roles: roles('ADMIN', 'SECRETARIA'),
+    permission: 'settings.manage',
   },
   padres: {
     href: '/gestor/padres',
     label: 'Padres',
-    roles: roles('ADMIN', 'SECRETARIA'),
+    permission: 'priest.view',
   },
   disponibilidades: {
     href: '/gestor/disponibilidades',
     label: 'Disponibilidades',
-    roles: roles('ADMIN', 'SECRETARIA'),
+    permission: 'availability.manage',
   },
   bloqueios: {
     href: '/gestor/bloqueios',
     label: 'Bloqueios',
-    roles: roles('ADMIN', 'SECRETARIA'),
+    permission: 'blocked_slot.manage',
   },
   qrcode: {
     href: '/gestor/qrcode',
     label: 'QR Code',
-    roles: roles('ADMIN', 'SECRETARIA'),
+    permission: 'qrcode.manage',
+  },
+  usuarios: {
+    href: '/gestor/usuarios',
+    label: 'Usuários e acessos',
+    permission: 'user.manage',
   },
 } satisfies Record<string, InternalRouteConfig>
 

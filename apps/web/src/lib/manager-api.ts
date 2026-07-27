@@ -92,10 +92,58 @@ export type ManagerPriest = {
   appointmentDurationMin: number | null
   user: {
     id: string
+    name: string
     username: string
     email: string
     active: boolean
-  }
+  } | null
+}
+
+export type UnlinkedPriestUser = {
+  id: string
+  name: string
+  username: string
+  email: string
+  active: boolean
+  restorablePriestId: string | null
+}
+
+export type ManagerUser = {
+  id: string
+  name: string
+  username: string
+  email: string
+  role: 'ADMIN' | 'SECRETARIA' | 'PADRE'
+  active: boolean
+  lastLoginAt: string | null
+  createdAt: string
+  updatedAt: string
+  roleDefinition: { name: string }
+  priestProfile: {
+    id: string
+    name: string
+    active: boolean
+  } | null
+}
+
+export type AccessPermission = {
+  key: string
+  name: string
+  group: string
+  description: string | null
+}
+
+export type AccessRole = {
+  key: 'ADMIN' | 'SECRETARIA' | 'PADRE'
+  name: string
+  description: string | null
+  userCount: number
+  permissionKeys: string[]
+}
+
+export type AccessRolesResponse = {
+  roles: AccessRole[]
+  permissions: AccessPermission[]
 }
 
 export type ManagerAvailability = {
@@ -181,6 +229,24 @@ export async function getDashboard(filter: DashboardFilter): Promise<ManagerDash
 
 export async function getPriests(): Promise<PaginatedResponse<ManagerPriest>> {
   return getPaginated('/priests?limit=100')
+}
+
+export async function getUnlinkedPriestUsers(): Promise<{ items: UnlinkedPriestUser[] }> {
+  const response = await fetchAuthenticated('/priests/unlinked-users')
+  if (!response.ok) return { items: [] }
+  return (await response.json()) as { items: UnlinkedPriestUser[] }
+}
+
+export async function getUsers(): Promise<{ items: ManagerUser[] }> {
+  const response = await fetchAuthenticated('/users?limit=100')
+  if (!response.ok) return { items: [] }
+  return (await response.json()) as { items: ManagerUser[] }
+}
+
+export async function getAccessRoles(): Promise<AccessRolesResponse> {
+  const response = await fetchAuthenticated('/roles')
+  if (!response.ok) return { roles: [], permissions: [] }
+  return (await response.json()) as AccessRolesResponse
 }
 
 export async function getAvailabilities(): Promise<PaginatedResponse<ManagerAvailability>> {

@@ -6,11 +6,13 @@ export type AuthenticatedUser = {
   username: string
   email: string
   role: UserRole
+  permissions: string[]
 }
 
 export type SessionPayload = {
   sub: string
   role: UserRole
+  ver: number
   iat: number
   exp: number
 }

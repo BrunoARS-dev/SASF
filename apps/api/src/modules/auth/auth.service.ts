@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { createHmac, timingSafeEqual } from 'node:crypto'
-import type { User } from '@prisma/client'
+import type { Prisma } from '@prisma/client'
 import { AppErrorCodes } from '../../common/errors/app-error-codes'
 import { requireFields } from '../../common/validation/required-fields'
 import { PrismaService } from '../prisma/prisma.service'
@@ -47,6 +47,7 @@ export class AuthService {
       token: this.signSessionToken({
         sub: user.id,
         role: user.role,
+        ver: user.sessionVersion,
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(expiresAt.getTime() / 1000),
       }),
@@ -68,9 +69,12 @@ export class AuthService {
         active: true,
         deletedAt: null,
       },
+      include: AUTH_USER_INCLUDE,
     })
 
-    return user ? this.toAuthenticatedUser(user) : null
+    return user && payload.ver === user.sessionVersion
+      ? this.toAuthenticatedUser(user)
+      : null
   }
 
   setSessionCookie(response: CookieResponse, token: string) {
@@ -99,15 +103,17 @@ export class AuthService {
     return decodeURIComponent(sessionCookie.slice(AUTH_SESSION_COOKIE.length + 1))
   }
 
-  private async findUserForLogin(identifier: string): Promise<User | null> {
+  private async findUserForLogin(identifier: string): Promise<AuthUserPayload | null> {
     if (identifier.includes('@')) {
       return this.prisma.user.findUnique({
         where: { email: identifier.toLowerCase() },
+        include: AUTH_USER_INCLUDE,
       })
     }
 
     return this.prisma.user.findUnique({
       where: { username: identifier.toLowerCase() },
+      include: AUTH_USER_INCLUDE,
     })
   }
 
@@ -129,7 +135,13 @@ export class AuthService {
         Buffer.from(encodedPayload, 'base64url').toString('utf8'),
       ) as SessionPayload
 
-      if (!payload.sub || !payload.role || !payload.exp || payload.exp <= Math.floor(Date.now() / 1000)) {
+      if (
+        !payload.sub ||
+        !payload.role ||
+        !payload.ver ||
+        !payload.exp ||
+        payload.exp <= Math.floor(Date.now() / 1000)
+      ) {
         return null
       }
 
@@ -177,13 +189,16 @@ export class AuthService {
     return String(identifier ?? '').trim().toLowerCase()
   }
 
-  private toAuthenticatedUser(user: User): AuthenticatedUser {
+  private toAuthenticatedUser(user: AuthUserPayload): AuthenticatedUser {
     return {
       id: user.id,
       name: user.name,
       username: user.username,
       email: user.email,
       role: user.role,
+      permissions: user.roleDefinition.permissions.map(
+        (item) => item.permissionKey,
+      ),
     }
   }
 
@@ -194,3 +209,17 @@ export class AuthService {
     })
   }
 }
+
+const AUTH_USER_INCLUDE = {
+  roleDefinition: {
+    include: {
+      permissions: {
+        select: { permissionKey: true },
+      },
+    },
+  },
+} satisfies Prisma.UserInclude
+
+type AuthUserPayload = Prisma.UserGetPayload<{
+  include: typeof AUTH_USER_INCLUDE
+}>

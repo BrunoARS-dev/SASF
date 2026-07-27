@@ -5,7 +5,6 @@ import { AppErrorCodes } from '../../common/errors/app-error-codes'
 import { requireFields } from '../../common/validation/required-fields'
 import { AuditService } from '../audit/audit.service'
 import type { AuthenticatedUser } from '../auth/auth.types'
-import { PasswordService } from '../auth/password.service'
 import { PrismaService } from '../prisma/prisma.service'
 import { CreatePriestDto } from './dto/create-priest.dto'
 import { UpdatePriestDto } from './dto/update-priest.dto'
@@ -14,7 +13,6 @@ import { UpdatePriestDto } from './dto/update-priest.dto'
 export class PriestsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly passwordService: PasswordService,
     private readonly auditService: AuditService,
   ) {}
 
@@ -22,7 +20,6 @@ export class PriestsService {
     const page = boundedPositiveInt(query.page, 1, 1, 500)
     const limit = boundedPositiveInt(query.limit, 50, 1, 100)
     const where: Prisma.PriestWhereInput = { deletedAt: null }
-
     const [items, total] = await Promise.all([
       this.prisma.priest.findMany({
         where,
@@ -34,80 +31,59 @@ export class PriestsService {
       this.prisma.priest.count({ where }),
     ])
 
+    return { items: items.map(toPriestResponse), page, limit, total }
+  }
+
+  async listUnlinkedUsers() {
+    const users = await this.prisma.user.findMany({
+      where: {
+        role: 'PADRE',
+        deletedAt: null,
+        OR: [
+          { priestProfile: { is: null } },
+          { priestProfile: { is: { deletedAt: { not: null } } } },
+        ],
+      },
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        username: true,
+        active: true,
+        priestProfile: {
+          select: { id: true, deletedAt: true },
+        },
+      },
+    })
+
     return {
-      items: items.map(toPriestResponse),
-      page,
-      limit,
-      total,
+      items: users.map((user) => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        username: user.username,
+        active: user.active,
+        restorablePriestId: user.priestProfile?.deletedAt
+          ? user.priestProfile.id
+          : null,
+      })),
     }
   }
 
   async create(dto: CreatePriestDto, actor?: AuthenticatedUser) {
-    requireFields(dto as Record<string, unknown>, ['name', 'username', 'email', 'password'])
-
+    requireFields(dto as Record<string, unknown>, ['name'])
     const name = normalizeName(dto.name)
-    const username = normalizeUsername(dto.username)
-    const email = normalizeEmail(dto.email)
-    const password = String(dto.password ?? '')
     const appointmentDurationMin = validateDuration(dto.appointmentDurationMin)
-
-    if (password.length < 8) {
-      throw badRequest('Senha deve ter pelo menos 8 caracteres.')
-    }
-
     const active = dto.active ?? true
-    const passwordHash = await this.passwordService.hash(password)
+    const userId = normalizeOptionalId(dto.userId)
 
-    let priest: PriestPayload
-    try {
-      priest = await this.prisma.$transaction(async (tx) => {
-        const matchingUsers = await tx.user.findMany({
-          where: {
-            OR: [{ username }, { email }],
-          },
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            deletedAt: true,
-            priestProfile: {
-              select: {
-                id: true,
-                deletedAt: true,
-              },
-            },
-          },
-        })
-
-        const usernameOwner = matchingUsers.find((user) => user.username === username)
-        const emailOwner = matchingUsers.find((user) => user.email === email)
-
-        if (usernameOwner && emailOwner && usernameOwner.id !== emailOwner.id) {
-          throw badRequest('Usuario e e-mail pertencem a cadastros diferentes.')
-        }
-
-        const existingUser = usernameOwner ?? emailOwner
-        if (existingUser) {
-          const existingPriest = existingUser.priestProfile
-          if (!existingUser.deletedAt || !existingPriest?.deletedAt) {
-            throw badRequest('Usuario ou e-mail ja cadastrado.')
-          }
-
-          await tx.user.update({
-            where: { id: existingUser.id },
-            data: {
-              name,
-              username,
-              email,
-              passwordHash,
-              role: 'PADRE',
-              active,
-              deletedAt: null,
-            },
-          })
-
+    const priest = await this.prisma.$transaction(async (tx) => {
+      if (userId) {
+        const user = await this.findEligibleUser(tx, userId)
+        if (user.priestProfile?.deletedAt) {
           const restored = await tx.priest.update({
-            where: { id: existingPriest.id },
+            where: { id: user.priestProfile.id },
             data: {
               name,
               active,
@@ -116,101 +92,49 @@ export class PriestsService {
             },
             select: PRIEST_SELECT,
           })
-
-          await this.auditService.recordSafeMutation(
-            {
-              actorUserId: actor?.id,
-              action: 'PRIEST_RESTORED',
-              entityType: 'Priest',
-              entityId: restored.id,
-              metadataSafe: {
-                active: restored.active,
-                appointmentDurationMin: restored.appointmentDurationMin,
-              },
-            },
-            tx,
-          )
-
+          await this.record(actor, 'PRIEST_RESTORED', restored, tx)
           return restored
         }
-
-        const user = await tx.user.create({
-          data: {
-            name,
-            username,
-            email,
-            passwordHash,
-            role: 'PADRE',
-            active,
-          },
-          select: { id: true },
-        })
-
-        const created = await tx.priest.create({
-          data: {
-            userId: user.id,
-            name,
-            active,
-            appointmentDurationMin,
-          },
-          select: PRIEST_SELECT,
-        })
-
-        await this.auditService.recordSafeMutation(
-          {
-            actorUserId: actor?.id,
-            action: 'PRIEST_CREATED',
-            entityType: 'Priest',
-            entityId: created.id,
-            metadataSafe: {
-              active: created.active,
-              appointmentDurationMin: created.appointmentDurationMin,
-            },
-          },
-          tx,
-        )
-
-        return created
-      })
-    } catch (error) {
-      if (isUniqueConstraintError(error)) {
-        throw badRequest('Usuario ou e-mail ja cadastrado.')
       }
 
-      throw error
-    }
+      const created = await tx.priest.create({
+        data: {
+          name,
+          active,
+          appointmentDurationMin,
+          ...(userId ? { userId } : {}),
+        },
+        select: PRIEST_SELECT,
+      })
+      await this.record(actor, 'PRIEST_CREATED', created, tx)
+      return created
+    })
 
     return { priest: toPriestResponse(priest) }
   }
 
   async update(id: string, dto: UpdatePriestDto, actor?: AuthenticatedUser) {
     requireFields({ id }, ['id'])
-
-    const existing = await this.findExisting(id)
+    await this.findExisting(id)
     const data: Prisma.PriestUpdateInput = {}
-    const userData: Prisma.UserUpdateInput = {}
 
-    if (dto.name !== undefined) {
-      const name = normalizeName(dto.name)
-      data.name = name
-      userData.name = name
-    }
-
-    if (dto.active !== undefined) {
-      data.active = Boolean(dto.active)
-      userData.active = Boolean(dto.active)
-    }
-
+    if (dto.name !== undefined) data.name = normalizeName(dto.name)
+    if (dto.active !== undefined) data.active = Boolean(dto.active)
     if (dto.appointmentDurationMin !== undefined) {
       data.appointmentDurationMin = validateDuration(dto.appointmentDurationMin)
     }
 
+    const userId =
+      dto.userId === undefined ? undefined : normalizeOptionalId(dto.userId)
+
     const priest = await this.prisma.$transaction(async (tx) => {
-      if (Object.keys(userData).length > 0) {
-        await tx.user.update({
-          where: { id: existing.userId },
-          data: userData,
-        })
+      if (userId !== undefined) {
+        if (userId) {
+          await this.findEligibleUser(tx, userId, id)
+          data.user = { connect: { id: userId } }
+        } else {
+          data.user = { disconnect: true }
+        }
       }
 
       const updated = await tx.priest.update({
@@ -218,21 +142,7 @@ export class PriestsService {
         data,
         select: PRIEST_SELECT,
       })
-
-      await this.auditService.recordSafeMutation(
-        {
-          actorUserId: actor?.id,
-          action: 'PRIEST_UPDATED',
-          entityType: 'Priest',
-          entityId: id,
-          metadataSafe: {
-            active: updated.active,
-            appointmentDurationMin: updated.appointmentDurationMin,
-          },
-        },
-        tx,
-      )
-
+      await this.record(actor, 'PRIEST_UPDATED', updated, tx)
       return updated
     })
 
@@ -241,22 +151,12 @@ export class PriestsService {
 
   async remove(id: string, actor?: AuthenticatedUser) {
     requireFields({ id }, ['id'])
-    const existing = await this.findExisting(id)
+    await this.findExisting(id)
 
     await this.prisma.$transaction(async (tx) => {
       await tx.priest.update({
         where: { id },
-        data: {
-          active: false,
-          deletedAt: new Date(),
-        },
-      })
-      await tx.user.update({
-        where: { id: existing.userId },
-        data: {
-          active: false,
-          deletedAt: new Date(),
-        },
+        data: { active: false, deletedAt: new Date() },
       })
       await this.auditService.recordSafeMutation(
         {
@@ -273,20 +173,65 @@ export class PriestsService {
     return { ok: true }
   }
 
-  private async findExisting(id: string): Promise<Pick<Priest, 'id' | 'userId'>> {
+  private async findEligibleUser(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    currentPriestId?: string,
+  ) {
+    const user = await tx.user.findFirst({
+      where: { id: userId, role: 'PADRE', deletedAt: null },
+      select: {
+        id: true,
+        priestProfile: { select: { id: true, deletedAt: true } },
+      },
+    })
+    if (!user) throw badRequest('Selecione uma conta ativa com função Padre.')
+    if (
+      user.priestProfile &&
+      !user.priestProfile.deletedAt &&
+      user.priestProfile.id !== currentPriestId
+    ) {
+      throw badRequest('Esta conta já está vinculada a outro perfil de padre.')
+    }
+    return user
+  }
+
+  private async findExisting(
+    id: string,
+  ): Promise<Pick<Priest, 'id' | 'userId'>> {
     const priest = await this.prisma.priest.findFirst({
       where: { id, deletedAt: null },
       select: { id: true, userId: true },
     })
-
     if (!priest) {
       throw new NotFoundException({
         code: AppErrorCodes.NOT_FOUND,
-        message: 'Padre nao encontrado.',
+        message: 'Padre não encontrado.',
       })
     }
-
     return priest
+  }
+
+  private record(
+    actor: AuthenticatedUser | undefined,
+    action: string,
+    priest: PriestPayload,
+    tx: Prisma.TransactionClient,
+  ) {
+    return this.auditService.recordSafeMutation(
+      {
+        actorUserId: actor?.id,
+        action,
+        entityType: 'Priest',
+        entityId: priest.id,
+        metadataSafe: {
+          active: priest.active,
+          appointmentDurationMin: priest.appointmentDurationMin,
+          linkedUserId: priest.user?.id ?? null,
+        },
+      },
+      tx,
+    )
   }
 }
 
@@ -300,6 +245,7 @@ const PRIEST_SELECT = {
   user: {
     select: {
       id: true,
+      name: true,
       username: true,
       email: true,
       active: true,
@@ -311,53 +257,29 @@ type PriestPayload = Prisma.PriestGetPayload<{ select: typeof PRIEST_SELECT }>
 
 function toPriestResponse(priest: PriestPayload) {
   return {
-    id: priest.id,
-    name: priest.name,
-    active: priest.active,
-    appointmentDurationMin: priest.appointmentDurationMin,
+    ...priest,
     createdAt: priest.createdAt.toISOString(),
     updatedAt: priest.updatedAt.toISOString(),
-    user: priest.user,
   }
 }
 
-function normalizeName(value: string | undefined): string {
+function normalizeName(value: string | undefined) {
   const normalized = String(value ?? '').trim().replace(/\s+/g, ' ')
-  if (!normalized) {
-    throw badRequest('Nome invalido.')
-  }
-
+  if (!normalized) throw badRequest('Nome inválido.')
   return normalized
 }
 
-function normalizeUsername(value: string | undefined): string {
-  const normalized = String(value ?? '').trim().toLowerCase()
-  if (!normalized) {
-    throw badRequest('Usuario invalido.')
-  }
-
-  return normalized
-}
-
-function normalizeEmail(value: string | undefined): string {
-  const normalized = String(value ?? '').trim().toLowerCase()
-  if (!normalized.includes('@')) {
-    throw badRequest('E-mail invalido.')
-  }
-
-  return normalized
+function normalizeOptionalId(value: string | null | undefined) {
+  if (value === null || value === undefined || !String(value).trim()) return null
+  return String(value).trim()
 }
 
 function validateDuration(value: number | undefined): number | null {
-  if (value === undefined || value === null) {
-    return null
-  }
-
+  if (value === undefined || value === null) return null
   const parsed = Number(value)
   if (!Number.isInteger(parsed) || parsed < 10 || parsed > 240) {
-    throw badRequest('Duracao invalida.')
+    throw badRequest('Duração inválida.')
   }
-
   return parsed
 }
 
@@ -368,23 +290,13 @@ function badRequest(message: string) {
   })
 }
 
-function isUniqueConstraintError(error: unknown) {
-  return typeof error === 'object'
-    && error !== null
-    && 'code' in error
-    && error.code === 'P2002'
-}
-
 function boundedPositiveInt(
   value: string | undefined,
   fallback: number,
   min: number,
   max: number,
-): number {
+) {
   const parsed = Number(value)
-  if (!Number.isInteger(parsed)) {
-    return fallback
-  }
-
+  if (!Number.isInteger(parsed)) return fallback
   return Math.min(Math.max(parsed, min), max)
 }

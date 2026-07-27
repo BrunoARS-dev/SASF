@@ -6,6 +6,7 @@ import { AuthService } from './auth.service'
 import { AUTH_LOGIN_RATE_LIMIT } from './auth.constants'
 import { AuthGuard } from './guards/auth.guard'
 import { RolesGuard } from './guards/roles.guard'
+import { PermissionsGuard } from './guards/permissions.guard'
 import { PasswordService } from './password.service'
 
 @Module({
@@ -19,7 +20,7 @@ import { PasswordService } from './password.service'
     ]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, PasswordService, AuthGuard, RolesGuard],
-  exports: [AuthService, PasswordService, AuthGuard, RolesGuard],
+  providers: [AuthService, PasswordService, AuthGuard, RolesGuard, PermissionsGuard],
+  exports: [AuthService, PasswordService, AuthGuard, RolesGuard, PermissionsGuard],
 })
 export class AuthModule {}

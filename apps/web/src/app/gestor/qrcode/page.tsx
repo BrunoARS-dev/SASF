@@ -7,7 +7,7 @@ export default async function QrCodePage() {
   const user = await getCurrentUser()
   if (!user) return null
 
-  if (!canAccess(user.role, 'qrcode')) {
+  if (!canAccess(user, 'qrcode')) {
     return (
       <ManagerPlaceholder
         user={user}

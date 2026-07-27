@@ -7,7 +7,7 @@ export default async function DisponibilidadesPage() {
   const user = await getCurrentUser()
   if (!user) return null
 
-  if (!canAccess(user.role, 'disponibilidades')) {
+  if (!canAccess(user, 'disponibilidades')) {
     return (
       <ManagerPlaceholder
         user={user}

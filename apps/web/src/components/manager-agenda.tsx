@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { ManualAppointmentPanel } from '@/components/manager-operation-panels'
 import { DeleteCancelledAppointmentAction, ManagerAgendaActions } from '@/components/manager-agenda-actions'
 import type { InternalUser } from '@/lib/auth'
+import { hasPermission } from '@/lib/permissions'
 import type { ManagerAgendaDay, ManagerAppointment, ManagerPriest } from '@/lib/manager-api'
 
 export function ManagerAgenda({
@@ -22,7 +23,7 @@ export function ManagerAgenda({
 }) {
   const formattedDate = formatDate(date)
   const pendingCount = agenda.items.filter((item) => canMarkAttendance(item.status)).length
-  const canCreateManual = user.role === 'ADMIN' || user.role === 'SECRETARIA'
+  const canCreateManual = hasPermission(user, 'agenda.create_manual')
   const [isCreatingManual, setIsCreatingManual] = useState(false)
 
   return (
@@ -221,8 +222,10 @@ function CalendarIcon() {
 
 function AgendaItem({ appointment, user }: { appointment: ManagerAppointment; user: InternalUser }) {
   const markable = canMarkAttendance(appointment.status)
-  const canCancel = user.role === 'ADMIN' || user.role === 'SECRETARIA'
-  const canDeleteCancelled = canCancel && appointment.status === 'CANCELADO'
+  const canConfirmAttendance = hasPermission(user, 'agenda.mark_attendance')
+  const canCancel = hasPermission(user, 'agenda.cancel')
+  const canDeleteCancelled =
+    hasPermission(user, 'agenda.delete') && appointment.status === 'CANCELADO'
 
   return (
     <article className="agenda-item">
@@ -249,11 +252,12 @@ function AgendaItem({ appointment, user }: { appointment: ManagerAppointment; us
           <dd>{appointment.priest.name}</dd>
         </div>
       </dl>
-      {markable ? (
+      {markable && (canConfirmAttendance || canCancel) ? (
         <ManagerAgendaActions
           appointmentId={appointment.id}
           appointmentStartAt={appointment.startAt}
           canCancel={canCancel}
+          canConfirmAttendance={canConfirmAttendance}
         />
       ) : null}
       {canDeleteCancelled ? <DeleteCancelledAppointmentAction appointmentId={appointment.id} /> : null}

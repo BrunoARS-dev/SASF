@@ -246,10 +246,6 @@ export class AvailabilityService {
         priest: {
           active: true,
           deletedAt: null,
-          user: {
-            active: true,
-            deletedAt: null,
-          },
         },
       },
       select: {

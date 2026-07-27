@@ -4,7 +4,9 @@ import { INTERNAL_ROUTES, InternalUser } from '@/lib/auth'
 import { LogoutButton } from './logout-button'
 
 export function ManagerShell({ user, children }: { user: InternalUser; children: ReactNode }) {
-  const routes = Object.values(INTERNAL_ROUTES).filter((route) => route.roles.includes(user.role))
+  const routes = Object.values(INTERNAL_ROUTES).filter((route) =>
+    user.permissions.includes(route.permission),
+  )
 
   return (
     <main className="manager-shell">

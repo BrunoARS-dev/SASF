@@ -1,17 +1,17 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto'
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
-import { Roles } from '../auth/decorators/roles.decorator'
+import { Permissions } from '../auth/decorators/permissions.decorator'
 import type { AuthenticatedUser } from '../auth/auth.types'
 import { AuthGuard } from '../auth/guards/auth.guard'
-import { RolesGuard } from '../auth/guards/roles.guard'
+import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { BlockedSlotsService } from './blocked-slots.service'
 import { CreateBlockedSlotDto } from './dto/create-blocked-slot.dto'
 import { UpdateBlockedSlotDto } from './dto/update-blocked-slot.dto'
 
 @Controller('blocked-slots')
-@UseGuards(AuthGuard, RolesGuard)
-@Roles('ADMIN', 'SECRETARIA')
+@UseGuards(AuthGuard, PermissionsGuard)
+@Permissions('blocked_slot.manage')
 export class BlockedSlotsController {
   constructor(private readonly blockedSlotsService: BlockedSlotsService) {}
 

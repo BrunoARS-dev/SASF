@@ -287,7 +287,7 @@ export function ManagerPlaceholder({
   title: string
   description: string
 }) {
-  if (!canAccess(user.role, routeKey)) {
+  if (!canAccess(user, routeKey)) {
     return (
       <div className="manager-content">
         <section className="manager-title">

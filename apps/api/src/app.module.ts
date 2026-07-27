@@ -9,6 +9,7 @@ import { SettingsModule } from './modules/settings/settings.module'
 import { AuditModule } from './modules/audit/audit.module'
 import { PrismaModule } from './modules/prisma/prisma.module'
 import { HealthController } from './health.controller'
+import { RolesModule } from './modules/roles/roles.module'
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { HealthController } from './health.controller'
     BlockedSlotsModule,
     AppointmentsModule,
     SettingsModule,
+    RolesModule,
   ],
   controllers: [HealthController],
 })

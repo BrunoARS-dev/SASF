@@ -1,10 +1,10 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler'
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
-import { Roles } from '../auth/decorators/roles.decorator'
+import { Permissions } from '../auth/decorators/permissions.decorator'
 import type { AuthenticatedUser } from '../auth/auth.types'
 import { AuthGuard } from '../auth/guards/auth.guard'
-import { RolesGuard } from '../auth/guards/roles.guard'
+import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { PUBLIC_APPOINTMENT_RATE_LIMIT, PUBLIC_CODE_RATE_LIMIT } from './appointments.constants'
 import { AgendaDayQueryDto } from './dto/agenda-day-query.dto'
 import { CreateManualAppointmentDto } from './dto/create-manual-appointment.dto'
@@ -48,57 +48,57 @@ export class AppointmentsController {
   }
 
   @Get('appointments/day')
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles('ADMIN', 'SECRETARIA', 'PADRE')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Permissions('agenda.view')
   listDay(@Query() query: AgendaDayQueryDto, @CurrentUser() user: AuthenticatedUser) {
     return this.appointmentsService.listDay(query, user)
   }
 
   @Get('appointments/dashboard')
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles('ADMIN', 'SECRETARIA', 'PADRE')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Permissions('dashboard.view')
   dashboard(@Query() query: DashboardQueryDto, @CurrentUser() user: AuthenticatedUser) {
     return this.appointmentsService.getDashboard(query, user)
   }
 
   @Post('appointments/manual')
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles('ADMIN', 'SECRETARIA')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Permissions('agenda.create_manual')
   createManual(@Body() dto: CreateManualAppointmentDto, @CurrentUser() user: AuthenticatedUser) {
     return this.appointmentsService.createManual(dto, user)
   }
 
   @Patch('appointments/:id/cancel')
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles('ADMIN', 'SECRETARIA')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Permissions('agenda.cancel')
   cancelInternal(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.appointmentsService.cancelInternal(id, user)
   }
 
   @Delete('appointments/:id')
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles('ADMIN', 'SECRETARIA')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Permissions('agenda.delete')
   deleteCancelled(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.appointmentsService.deleteCancelled(id, user)
   }
 
   @Patch('appointments/:id/reschedule')
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles('ADMIN', 'SECRETARIA')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Permissions('agenda.cancel')
   reschedule(@Param('id') id: string, @Body() dto: RescheduleAppointmentDto, @CurrentUser() user: AuthenticatedUser) {
     return this.appointmentsService.reschedule(id, dto, user)
   }
 
   @Patch('appointments/:id/attendance/realized')
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles('ADMIN', 'SECRETARIA', 'PADRE')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Permissions('agenda.mark_attendance')
   markRealized(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.appointmentsService.markRealized(id, user)
   }
 
   @Patch('appointments/:id/attendance/absent')
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles('ADMIN', 'SECRETARIA', 'PADRE')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Permissions('agenda.mark_attendance')
   markAbsent(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.appointmentsService.markAbsent(id, user)
   }
