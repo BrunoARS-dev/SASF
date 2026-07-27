@@ -9,6 +9,7 @@ import { PUBLIC_APPOINTMENT_RATE_LIMIT, PUBLIC_CODE_RATE_LIMIT } from './appoint
 import { AgendaDayQueryDto } from './dto/agenda-day-query.dto'
 import { CreateManualAppointmentDto } from './dto/create-manual-appointment.dto'
 import { CreatePublicAppointmentDto } from './dto/create-public-appointment.dto'
+import { DashboardQueryDto } from './dto/dashboard-query.dto'
 import { LookupAppointmentDto } from './dto/lookup-appointment.dto'
 import { RecoverCodeDto } from './dto/recover-code.dto'
 import { RescheduleAppointmentDto } from './dto/reschedule-appointment.dto'
@@ -56,8 +57,8 @@ export class AppointmentsController {
   @Get('appointments/dashboard')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('ADMIN', 'SECRETARIA', 'PADRE')
-  dashboard(@CurrentUser() user: AuthenticatedUser) {
-    return this.appointmentsService.getDashboard(user)
+  dashboard(@Query() query: DashboardQueryDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.appointmentsService.getDashboard(query, user)
   }
 
   @Post('appointments/manual')

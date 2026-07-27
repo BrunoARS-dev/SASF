@@ -14,10 +14,13 @@ describe('AppointmentsService critical scheduling rules', () => {
     })
     const service = createService(prisma)
 
-    const result = await service.getDashboard({
-      id: 'admin-1',
-      role: 'ADMIN',
-    } as any)
+    const result = await service.getDashboard(
+      { range: 'all' },
+      {
+        id: 'admin-1',
+        role: 'ADMIN',
+      } as any,
+    )
 
     expect(result.totals).toMatchObject({
       appointments: 4,
@@ -33,6 +36,32 @@ describe('AppointmentsService critical scheduling rules', () => {
     expect(result.leastRecurringDay).toMatchObject({
       label: 'Terça-feira',
       count: 1,
+    })
+  })
+
+  it('filters dashboard appointments by the selected month', async () => {
+    const prisma = createPrismaMock()
+    const service = createService(prisma)
+
+    const result = await service.getDashboard(
+      { range: 'month', year: '2026', month: '7' },
+      { id: 'admin-1', role: 'ADMIN' } as any,
+    )
+
+    expect(prisma.appointment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          startAt: {
+            gte: new Date('2026-07-01T03:00:00.000Z'),
+            lt: new Date('2026-08-01T03:00:00.000Z'),
+          },
+        }),
+      }),
+    )
+    expect(result.period).toMatchObject({
+      range: 'month',
+      year: 2026,
+      month: 7,
     })
   })
 

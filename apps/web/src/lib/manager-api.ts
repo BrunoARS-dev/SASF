@@ -59,7 +59,19 @@ export type ManagerDashboard = {
     label: string
     count: number
   } | null
+  period: {
+    range: 'month' | 'year' | 'all'
+    year: number | null
+    month: number | null
+    label: string
+  }
   generatedAt: string
+}
+
+export type DashboardFilter = {
+  range: 'month' | 'year' | 'all'
+  year?: number
+  month?: number
 }
 
 export type PaginatedResponse<T> = {
@@ -150,8 +162,11 @@ export async function getAgendaDay(date: string): Promise<ManagerAgendaDay> {
   return (await response.json()) as ManagerAgendaDay
 }
 
-export async function getDashboard(): Promise<ManagerDashboard> {
-  const response = await fetchAuthenticated('/appointments/dashboard')
+export async function getDashboard(filter: DashboardFilter): Promise<ManagerDashboard> {
+  const params = new URLSearchParams({ range: filter.range })
+  if (filter.year) params.set('year', String(filter.year))
+  if (filter.month) params.set('month', String(filter.month))
+  const response = await fetchAuthenticated(`/appointments/dashboard?${params}`)
 
   if (!response.ok) {
     return emptyDashboard()
@@ -280,6 +295,12 @@ function emptyDashboard(): ManagerDashboard {
     })),
     mostRecurringDay: null,
     leastRecurringDay: null,
+    period: {
+      range: 'month',
+      year: new Date().getFullYear(),
+      month: new Date().getMonth() + 1,
+      label: 'Mês atual',
+    },
     generatedAt: new Date().toISOString(),
   }
 }

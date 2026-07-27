@@ -798,6 +798,78 @@ a {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.dashboard-filters {
+  align-items: end;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 14px;
+}
+
+.dashboard-range-tabs {
+  background: var(--surface-soft);
+  border-radius: var(--radius);
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+}
+
+.dashboard-range-tabs a {
+  border-radius: calc(var(--radius) - 3px);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 760;
+  padding: 9px 13px;
+}
+
+.dashboard-range-tabs a[aria-current="page"] {
+  background: #fff;
+  box-shadow: 0 1px 5px rgba(20, 28, 24, 0.12);
+  color: var(--green-dark);
+}
+
+.dashboard-period-form {
+  align-items: end;
+  display: flex;
+  gap: 10px;
+}
+
+.dashboard-period-form label {
+  display: grid;
+  gap: 5px;
+}
+
+.dashboard-period-form label > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.dashboard-period-form select {
+  background: #fff;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font: inherit;
+  min-height: var(--control-height);
+  padding: 0 34px 0 11px;
+}
+
+.dashboard-period-form .primary-button {
+  width: auto;
+}
+
+.dashboard-all-time-note {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0;
+}
+
 .dashboard-metric {
   background: #fff;
   border: 1px solid var(--line);
@@ -928,6 +1000,20 @@ a {
   .dashboard-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .dashboard-filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dashboard-range-tabs {
+    overflow-x: auto;
+  }
+
+  .dashboard-range-tabs a {
+    flex: 1 0 auto;
+    text-align: center;
+  }
 }
 
 @media (max-width: 520px) {
@@ -938,6 +1024,21 @@ a {
 
   .dashboard-metric {
     min-height: 124px;
+  }
+
+  .dashboard-period-form {
+    align-items: stretch;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-period-form label:only-of-type,
+  .dashboard-period-form .primary-button {
+    grid-column: 1 / -1;
+  }
+
+  .dashboard-period-form select {
+    width: 100%;
   }
 
   .dashboard-demand {

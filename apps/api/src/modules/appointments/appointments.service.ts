@@ -14,6 +14,7 @@ import { PrismaService } from '../prisma/prisma.service'
 import { AgendaDayQueryDto } from './dto/agenda-day-query.dto'
 import { CreateManualAppointmentDto } from './dto/create-manual-appointment.dto'
 import { CreatePublicAppointmentDto } from './dto/create-public-appointment.dto'
+import { DashboardQueryDto } from './dto/dashboard-query.dto'
 import { LookupAppointmentDto } from './dto/lookup-appointment.dto'
 import { RecoverCodeDto } from './dto/recover-code.dto'
 import { RescheduleAppointmentDto } from './dto/reschedule-appointment.dto'
@@ -278,13 +279,17 @@ export class AppointmentsService {
     }
   }
 
-  async getDashboard(actor?: AuthenticatedUser) {
+  async getDashboard(query: DashboardQueryDto = {}, actor?: AuthenticatedUser) {
     await this.markExpiredAppointmentsPending()
     const priestScope = await this.getPriestScopeForActor(actor)
+    const period = dashboardPeriod(query)
     const appointments = await this.prisma.appointment.findMany({
       where: {
         deletedAt: null,
         ...(priestScope ? { priestId: priestScope } : {}),
+        ...(period.startAt
+          ? { startAt: { gte: period.startAt, lt: period.endAt } }
+          : {}),
       },
       select: {
         status: true,
@@ -344,6 +349,12 @@ export class AppointmentsService {
       appointmentsByWeekday,
       mostRecurringDay,
       leastRecurringDay,
+      period: {
+        range: period.range,
+        year: period.year,
+        month: period.month,
+        label: period.label,
+      },
       generatedAt: now.toISOString(),
     }
   }
@@ -1159,6 +1170,53 @@ type DashboardWeekday = {
   dayOfWeek: number
   label: string
   count: number
+}
+
+type DashboardRange = 'month' | 'year' | 'all'
+
+function dashboardPeriod(query: DashboardQueryDto) {
+  const today = new Date()
+  const currentParts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: 'numeric',
+  }).formatToParts(today)
+  const currentYear = Number(currentParts.find((part) => part.type === 'year')?.value)
+  const currentMonth = Number(currentParts.find((part) => part.type === 'month')?.value)
+  const range: DashboardRange =
+    query.range === 'year' || query.range === 'all' ? query.range : 'month'
+  const year = boundedPositiveInt(query.year, currentYear, 2000, currentYear + 1)
+  const month = boundedPositiveInt(query.month, currentMonth, 1, 12)
+
+  if (range === 'all') {
+    return {
+      range,
+      year: null,
+      month: null,
+      label: 'Todo o histórico',
+      startAt: null,
+      endAt: null,
+    }
+  }
+
+  const startAt = localDateTimeToUtc(
+    `${year}-${String(range === 'month' ? month : 1).padStart(2, '0')}-01T00:00`,
+  )
+  const endYear = range === 'year' || month === 12 ? year + 1 : year
+  const endMonth = range === 'year' || month === 12 ? 1 : month + 1
+  const endAt = localDateTimeToUtc(
+    `${endYear}-${String(endMonth).padStart(2, '0')}-01T00:00`,
+  )
+  const label =
+    range === 'year'
+      ? `Ano de ${year}`
+      : new Intl.DateTimeFormat('pt-BR', {
+          month: 'long',
+          year: 'numeric',
+          timeZone: 'America/Sao_Paulo',
+        }).format(startAt)
+
+  return { range, year, month: range === 'month' ? month : null, label, startAt, endAt }
 }
 
 function parseDateTime(value: string): Date {

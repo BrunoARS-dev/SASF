@@ -25,9 +25,11 @@ export function ManagerHome({
           </p>
         </div>
         <span className="dashboard-scope">
-          Histórico de agendamentos
+          {dashboard.period.label}
         </span>
       </section>
+
+      <DashboardFilters period={dashboard.period} />
 
       <section className="dashboard-metrics" aria-label="Indicadores principais">
         <MetricCard
@@ -110,6 +112,87 @@ export function ManagerHome({
         </div>
       </section>
     </div>
+  )
+}
+
+function DashboardFilters({ period }: { period: ManagerDashboard['period'] }) {
+  const currentYear = new Date().getFullYear()
+  const selectedYear = period.year ?? currentYear
+  const selectedMonth = period.month ?? new Date().getMonth() + 1
+  const years = Array.from({ length: 8 }, (_, index) => currentYear + 1 - index)
+  const months = [
+    'Janeiro',
+    'Fevereiro',
+    'Março',
+    'Abril',
+    'Maio',
+    'Junho',
+    'Julho',
+    'Agosto',
+    'Setembro',
+    'Outubro',
+    'Novembro',
+    'Dezembro',
+  ]
+
+  return (
+    <section className="dashboard-filters" aria-label="Período do dashboard">
+      <nav className="dashboard-range-tabs" aria-label="Tipo de período">
+        <Link
+          href={`/gestor?range=month&year=${selectedYear}&month=${selectedMonth}`}
+          aria-current={period.range === 'month' ? 'page' : undefined}
+        >
+          Mês
+        </Link>
+        <Link
+          href={`/gestor?range=year&year=${selectedYear}`}
+          aria-current={period.range === 'year' ? 'page' : undefined}
+        >
+          Ano
+        </Link>
+        <Link
+          href="/gestor?range=all"
+          aria-current={period.range === 'all' ? 'page' : undefined}
+        >
+          Desde sempre
+        </Link>
+      </nav>
+
+      {period.range !== 'all' ? (
+        <form className="dashboard-period-form" action="/gestor" method="get">
+          <input name="range" type="hidden" value={period.range} />
+          {period.range === 'month' ? (
+            <label>
+              <span>Mês</span>
+              <select name="month" defaultValue={selectedMonth}>
+                {months.map((month, index) => (
+                  <option key={month} value={index + 1}>
+                    {month}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <label>
+            <span>Ano</span>
+            <select name="year" defaultValue={selectedYear}>
+              {years.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button className="primary-button compact-button" type="submit">
+            Aplicar
+          </button>
+        </form>
+      ) : (
+        <p className="dashboard-all-time-note">
+          Exibindo todos os agendamentos registrados.
+        </p>
+      )}
+    </section>
   )
 }
 
